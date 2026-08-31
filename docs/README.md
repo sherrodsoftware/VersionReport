@@ -2,11 +2,12 @@
 
 ## Overview
 
-Version Report is a native macOS application that monitors installed
-applications and reports when newer versions are available. It compares
-locally installed versions against vendor-maintained sources such as
-Homebrew APIs, vendor JSON endpoints, release notes, and selected Mac
-App Store pages.
+Version Report is a native macOS release-monitoring tool for Mac
+administrators. It tracks the latest stable releases for a configurable
+set of managed applications and notifies administrators when a vendor
+publishes an update. It checks vendor-maintained sources such as Homebrew
+APIs, vendor JSON endpoints, release notes, and selected Mac App Store
+pages; it does not inspect applications installed on the local Mac.
 
 ## Key Features
 
