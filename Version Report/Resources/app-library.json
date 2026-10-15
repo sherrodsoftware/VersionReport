@@ -154,6 +154,13 @@
     "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/docker-desktop.json"
   },
   {
+    "id" : "dji_studio",
+    "name" : "DJI Studio",
+    "parserType" : "regex",
+    "parserValue" : "\"mac_os\":\\{\"links\":\\[[^\\]]*\\],\"version\":\"v[0-9]+(\\.[0-9]+)+",
+    "versionURL" : "https:\/\/www.dji.com\/downloads\/softwares\/dji-studio"
+  },
+  {
     "id" : "downie",
     "name" : "Downie",
     "parserType" : "regex",
@@ -257,6 +264,13 @@
     "parserType" : "regex",
     "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
     "versionURL" : "https:\/\/apps.apple.com\/us\/app\/imovie\/id408981434?platform=mac"
+  },
+  {
+    "id" : "insta360_studio",
+    "name" : "Insta360 Studio",
+    "parserType" : "jq_trim_comma",
+    "parserValue" : ".version",
+    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/insta360-studio.json"
   },
   {
     "id" : "intellij_idea_ultimate",
