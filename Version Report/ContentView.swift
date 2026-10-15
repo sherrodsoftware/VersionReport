@@ -11,6 +11,7 @@ extension Notification.Name {
     static let versionReportRefresh = Notification.Name("versionReportRefresh")
     static let versionReportCheckNow = Notification.Name("versionReportCheckNow")
     static let versionReportCopyVersion = Notification.Name("versionReportCopyVersion")
+    static let versionReportRefreshDockBadge = Notification.Name("versionReportRefreshDockBadge")
 }
 
 struct MonitoredApp: Identifiable {
@@ -146,6 +147,14 @@ struct ContentView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(selectedApp.version, forType: .string)
+    }
+
+    private func markSelectedUpdatesAsRead() {
+        service.markUpdatesAsRead(for: uiState.selectedAppIDs)
+    }
+
+    private func markSelectedUpdatesAsUnread() {
+        service.markUpdatesAsUnread(for: uiState.selectedAppIDs)
     }
 
     private func libraryIcon(for config: AppConfig) -> NSImage {
@@ -297,6 +306,7 @@ struct ContentView: View {
                 .width(min: 160, ideal: 180)
 
             }
+            .selectionDisabled(false)
             .contextMenu(forSelectionType: MonitoredApp.ID.self) { selectedAppIDs in
                 Button("Copy Version") {
                     guard let selectedAppID = selectedAppIDs.first else {
@@ -307,6 +317,22 @@ struct ContentView: View {
                     copySelectedVersion()
                 }
                 .disabled(selectedAppIDs.count != 1)
+
+                Button("Mark as Read") {
+                    uiState.selectedAppIDs = selectedAppIDs
+                    markSelectedUpdatesAsRead()
+                }
+                .disabled(!selectedAppIDs.contains { selectedAppID in
+                    service.apps.first(where: { $0.id == selectedAppID })?.hasUnreadUpdate == true
+                })
+
+                Button("Mark as Unread") {
+                    uiState.selectedAppIDs = selectedAppIDs
+                    markSelectedUpdatesAsUnread()
+                }
+                .disabled(!selectedAppIDs.contains { selectedAppID in
+                    service.apps.first(where: { $0.id == selectedAppID })?.hasUnreadUpdate == false
+                })
 
                 Divider()
 
@@ -464,10 +490,9 @@ struct ContentView: View {
                                     do {
                                         if let version = try await service.fetchCurrentVersion(for: updatedConfig) {
                                             _ = service.updateAppState(version: version, for: updatedConfig)
-                                            let updatedApps = service.loadMonitoredApps()
 
                                             await MainActor.run {
-                                                service.apps = updatedApps
+                                                service.reloadApps()
 
                                                 let formatter = DateFormatter()
                                                 formatter.timeStyle = .short
@@ -573,15 +598,6 @@ struct ContentView: View {
             librarySearchText = ""
             selectedLibraryAppIDs.removeAll()
         }
-        .onChange(of: uiState.selectedAppIDs) { _, selectedIDs in
-            let selectedApps = service.apps.filter {
-                selectedIDs.contains($0.id)
-            }
-
-            for app in selectedApps {
-                service.clearUnreadUpdate(for: app.id)
-            }
-        }
         .onChange(of: uiState.editRequested) { _, requested in
             guard requested else {
                 return
@@ -589,6 +605,22 @@ struct ContentView: View {
 
             editSelectedApp()
             uiState.editRequested = false
+        }
+        .onChange(of: uiState.markAsReadRequested) { _, requested in
+            guard requested else {
+                return
+            }
+
+            markSelectedUpdatesAsRead()
+            uiState.markAsReadRequested = false
+        }
+        .onChange(of: uiState.markAsUnreadRequested) { _, requested in
+            guard requested else {
+                return
+            }
+
+            markSelectedUpdatesAsUnread()
+            uiState.markAsUnreadRequested = false
         }
         .onChange(of: uiState.deleteRequested) { _, requested in
             guard requested else {

@@ -10,5 +10,7 @@ final class AppUIState: ObservableObject {
     @Published var editRequested = false
     @Published var deleteRequested = false
     @Published var addToLibraryRequested = false
+    @Published var markAsReadRequested = false
+    @Published var markAsUnreadRequested = false
     @Published var showingLibrarySheet = false
 }

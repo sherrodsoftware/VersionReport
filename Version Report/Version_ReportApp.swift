@@ -7,10 +7,27 @@
 
 import SwiftUI
 
+final class VersionReportAppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        requestDockBadgeRefresh()
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        requestDockBadgeRefresh()
+    }
+
+    private func requestDockBadgeRefresh() {
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .versionReportRefreshDockBadge, object: nil)
+        }
+    }
+}
+
 @main
 struct Version_ReportApp: App {
     @StateObject private var service = VersionReportService()
     @StateObject private var uiState = AppUIState()
+    @NSApplicationDelegateAdaptor(VersionReportAppDelegate.self) private var appDelegate
     @AppStorage("showParserColumn") private var showParserColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
 
@@ -75,6 +92,21 @@ struct Version_ReportApp: App {
             }
 
             CommandGroup(after: .toolbar) {
+                Button("Mark as Read") {
+                    uiState.markAsReadRequested = true
+                }
+                .disabled(!service.apps.contains { app in
+                    uiState.selectedAppIDs.contains(app.id) && app.hasUnreadUpdate
+                })
+
+                Button("Mark as Unread") {
+                    uiState.markAsUnreadRequested = true
+                }
+                .disabled(!service.apps.contains { app in
+                    uiState.selectedAppIDs.contains(app.id) && !app.hasUnreadUpdate
+                })
+
+                Divider()
                 Toggle("Show Previous Version Column", isOn: $showPreviousVersionColumn)
                 Toggle("Show Parser Column", isOn: $showParserColumn)
             }

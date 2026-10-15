@@ -63,11 +63,16 @@ struct AppState: Codable {
 
 final class VersionReportService: ObservableObject {
 
-    @Published var apps: [MonitoredApp] = []
+    @Published var apps: [MonitoredApp] = [] {
+        didSet {
+            updateDockBadge()
+        }
+    }
     @Published var isChecking = false
     @Published var statusMessage = "Ready"
 
     private var hourlyTimer: Timer?
+    private var dockBadgeRefreshObserver: NSObjectProtocol?
     private let baseURL: URL
     private let bundledAppLibraryURL: URL?
 
@@ -80,6 +85,19 @@ final class VersionReportService: ObservableObject {
     ) {
         self.baseURL = baseURL
         self.bundledAppLibraryURL = bundledAppLibraryURL
+        dockBadgeRefreshObserver = NotificationCenter.default.addObserver(
+            forName: .versionReportRefreshDockBadge,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updateDockBadge()
+        }
+    }
+
+    deinit {
+        if let dockBadgeRefreshObserver {
+            NotificationCenter.default.removeObserver(dockBadgeRefreshObserver)
+        }
     }
 
     private var appStateURL: URL {
@@ -97,8 +115,7 @@ final class VersionReportService: ObservableObject {
 
     func loadApps() {
         initializeApplicationSupportIfNeeded()
-        apps = loadMonitoredApps()
-        updateDockBadge()
+        reloadApps()
 
         if shouldPerformAutomaticCheck() {
             runVersionCheck()
@@ -381,7 +398,6 @@ final class VersionReportService: ObservableObject {
 
                     await MainActor.run {
                         self.apps = updatedApps
-                        self.updateDockBadge()
 
                         let formatter = DateFormatter()
                         formatter.timeStyle = .short
@@ -433,8 +449,7 @@ final class VersionReportService: ObservableObject {
         appState.removeValue(forKey: id)
         saveAppState(appState)
 
-        loadApps()
-        updateDockBadge()
+        reloadApps()
     }
 
     func parserTypes() -> [String] {
@@ -533,7 +548,6 @@ final class VersionReportService: ObservableObject {
 
             await MainActor.run {
                 self.apps = updatedApps
-                self.updateDockBadge()
                 self.isChecking = false
 
                 let formatter = DateFormatter()
@@ -609,33 +623,60 @@ final class VersionReportService: ObservableObject {
     }
 
     func unreadUpdateCount() -> Int {
-        loadAppState().values.filter {
-            $0.hasUnreadUpdate ?? false
-        }.count
+        apps.filter(\.hasUnreadUpdate).count
     }
 
     func updateDockBadge() {
-        let count = unreadUpdateCount()
+        DispatchQueue.main.async { [weak self] in
+            guard let self else {
+                return
+            }
 
-        DispatchQueue.main.async {
-            NSApp.dockTile.badgeLabel = count > 0 ? "\(count)" : nil
-            NSApp.dockTile.display()
+            let count = self.unreadUpdateCount()
+            let dockTile = NSApplication.shared.dockTile
+            dockTile.contentView = nil
+            dockTile.badgeLabel = count > 0 ? "\(count)" : nil
+            dockTile.display()
         }
     }
 
-    func clearUnreadUpdate(for appID: String) {
-        var appState = loadAppState()
+    /// Reloads the visible app snapshot and its matching Dock badge from saved state.
+    func reloadApps() {
+        apps = loadMonitoredApps()
+    }
 
-        guard var state = appState[appID], state.hasUnreadUpdate == true else {
+    func markUpdatesAsRead(for appIDs: Set<String>) {
+        setUnreadStatus(false, for: appIDs)
+    }
+
+    func markUpdatesAsUnread(for appIDs: Set<String>) {
+        setUnreadStatus(true, for: appIDs)
+    }
+
+    private func setUnreadStatus(_ isUnread: Bool, for appIDs: Set<String>) {
+        guard !appIDs.isEmpty else {
             return
         }
 
-        state.hasUnreadUpdate = false
-        appState[appID] = state
-        saveAppState(appState)
+        var appState = loadAppState()
+        var didChange = false
 
-        apps = loadMonitoredApps()
-        updateDockBadge()
+        for appID in appIDs {
+            guard var state = appState[appID], state.hasUnreadUpdate != isUnread else {
+                continue
+            }
+
+            state.hasUnreadUpdate = isUnread
+            appState[appID] = state
+            didChange = true
+        }
+
+        guard didChange else {
+            return
+        }
+
+        saveAppState(appState)
+        reloadApps()
     }
 
 

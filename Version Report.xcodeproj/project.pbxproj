@@ -6,13 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXFileReference section */
-		ECA538E72FDB2FF500765A43 /* Version Report.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Version Report.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A4F54B1D2C8E4C8E90000001 /* Version ReportTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Version ReportTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A4F54B1D2C8E4C8E90000002 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
-		A4F54B1D2C8E4C8E90000003 /* VersionReportServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionReportServiceTests.swift; sourceTree = "<group>"; };
-/* End PBXFileReference section */
-
 /* Begin PBXBuildFile section */
 		A4F54B1D2C8E4C8E90000004 /* VersionReportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F54B1D2C8E4C8E90000003 /* VersionReportServiceTests.swift */; };
 		A4F54B1D2C8E4C8E90000005 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4F54B1D2C8E4C8E90000002 /* XCTest.framework */; };
@@ -28,6 +21,13 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXFileReference section */
+		A4F54B1D2C8E4C8E90000001 /* Version ReportTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Version ReportTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A4F54B1D2C8E4C8E90000002 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		A4F54B1D2C8E4C8E90000003 /* VersionReportServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VersionReportServiceTests.swift; sourceTree = "<group>"; };
+		ECA538E72FDB2FF500765A43 /* Version Report.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Version Report.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		EC5D1A7A2FC8B4CC003AAA1A /* Version Report */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -40,13 +40,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		EC5D1A752FC8B4CC003AAA1A /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		A4F54B1D2C8E4C8E90000007 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -55,20 +48,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		EC5D1A752FC8B4CC003AAA1A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		EC5D1A6F2FC8B4CC003AAA1A = {
-			isa = PBXGroup;
-			children = (
-				EC5D1A7A2FC8B4CC003AAA1A /* Version Report */,
-				A4F54B1D2C8E4C8E90000008 /* Version ReportTests */,
-				A4F54B1D2C8E4C8E9000000F /* Frameworks */,
-				ECA538E72FDB2FF500765A43 /* Version Report.app */,
-				A4F54B1D2C8E4C8E90000001 /* Version ReportTests.xctest */,
-			);
-			sourceTree = "<group>";
-		};
 		A4F54B1D2C8E4C8E90000008 /* Version ReportTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -85,9 +74,39 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		EC5D1A6F2FC8B4CC003AAA1A = {
+			isa = PBXGroup;
+			children = (
+				EC5D1A7A2FC8B4CC003AAA1A /* Version Report */,
+				A4F54B1D2C8E4C8E90000008 /* Version ReportTests */,
+				A4F54B1D2C8E4C8E9000000F /* Frameworks */,
+				ECA538E72FDB2FF500765A43 /* Version Report.app */,
+				A4F54B1D2C8E4C8E90000001 /* Version ReportTests.xctest */,
+			);
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A4F54B1D2C8E4C8E90000009 /* Version ReportTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A4F54B1D2C8E4C8E9000000A /* Build configuration list for PBXNativeTarget "Version ReportTests" */;
+			buildPhases = (
+				A4F54B1D2C8E4C8E9000000B /* Sources */,
+				A4F54B1D2C8E4C8E90000007 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A4F54B1D2C8E4C8E9000000C /* PBXTargetDependency */,
+			);
+			name = "Version ReportTests";
+			packageProductDependencies = (
+			);
+			productName = "Version ReportTests";
+			productReference = A4F54B1D2C8E4C8E90000001 /* Version ReportTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		EC5D1A772FC8B4CC003AAA1A /* Version Report */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = EC5D1A832FC8B4CD003AAA1A /* Build configuration list for PBXNativeTarget "Version Report" */;
@@ -110,25 +129,6 @@
 			productReference = ECA538E72FDB2FF500765A43 /* Version Report.app */;
 			productType = "com.apple.product-type.application";
 		};
-		A4F54B1D2C8E4C8E90000009 /* Version ReportTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A4F54B1D2C8E4C8E9000000A /* Build configuration list for PBXNativeTarget "Version ReportTests" */;
-			buildPhases = (
-				A4F54B1D2C8E4C8E9000000B /* Sources */,
-				A4F54B1D2C8E4C8E90000007 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A4F54B1D2C8E4C8E9000000C /* PBXTargetDependency */,
-			);
-			name = "Version ReportTests";
-			packageProductDependencies = (
-			);
-			productName = "Version ReportTests";
-			productReference = A4F54B1D2C8E4C8E90000001 /* Version ReportTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -139,12 +139,12 @@
 				LastSwiftUpdateCheck = 2650;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					EC5D1A772FC8B4CC003AAA1A = {
-						CreatedOnToolsVersion = 26.5;
-					};
 					A4F54B1D2C8E4C8E90000009 = {
 						CreatedOnToolsVersion = 26.5;
 						TestTargetID = EC5D1A772FC8B4CC003AAA1A;
+					};
+					EC5D1A772FC8B4CC003AAA1A = {
+						CreatedOnToolsVersion = 26.5;
 					};
 				};
 			};
@@ -179,18 +179,18 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		EC5D1A742FC8B4CC003AAA1A /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		A4F54B1D2C8E4C8E9000000B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				A4F54B1D2C8E4C8E90000004 /* VersionReportServiceTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EC5D1A742FC8B4CC003AAA1A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -205,6 +205,40 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A4F54B1D2C8E4C8E9000000D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = LAR9U97K23;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sherrodsoftware.VersionReportTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Version Report.app/Contents/MacOS/Version Report";
+				TEST_TARGET_NAME = "Version Report";
+			};
+			name = Debug;
+		};
+		A4F54B1D2C8E4C8E9000000E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = LAR9U97K23;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sherrodsoftware.VersionReportTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Version Report.app/Contents/MacOS/Version Report";
+				TEST_TARGET_NAME = "Version Report";
+			};
+			name = Release;
+		};
 		EC5D1A812FC8B4CD003AAA1A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -330,6 +364,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -360,7 +395,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 2026.08.21;
+				MARKETING_VERSION = 2026.10.15;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sherrodsoftware.VersionReport;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -390,7 +425,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -420,7 +456,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 2026.08.21;
+				MARKETING_VERSION = 2026.10.15;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sherrodsoftware.VersionReport;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -443,43 +479,18 @@
 			};
 			name = Release;
 		};
-		A4F54B1D2C8E4C8E9000000D /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = LAR9U97K23;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sherrodsoftware.VersionReportTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Version Report.app/Contents/MacOS/Version Report";
-				TEST_TARGET_NAME = "Version Report";
-			};
-			name = Debug;
-		};
-		A4F54B1D2C8E4C8E9000000E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = LAR9U97K23;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sherrodsoftware.VersionReportTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Version Report.app/Contents/MacOS/Version Report";
-				TEST_TARGET_NAME = "Version Report";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A4F54B1D2C8E4C8E9000000A /* Build configuration list for PBXNativeTarget "Version ReportTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A4F54B1D2C8E4C8E9000000D /* Debug */,
+				A4F54B1D2C8E4C8E9000000E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		EC5D1A732FC8B4CC003AAA1A /* Build configuration list for PBXProject "Version Report" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -494,15 +505,6 @@
 			buildConfigurations = (
 				EC5D1A842FC8B4CD003AAA1A /* Debug */,
 				EC5D1A852FC8B4CD003AAA1A /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		A4F54B1D2C8E4C8E9000000A /* Build configuration list for PBXNativeTarget "Version ReportTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A4F54B1D2C8E4C8E9000000D /* Debug */,
-				A4F54B1D2C8E4C8E9000000E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

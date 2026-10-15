@@ -105,6 +105,43 @@ final class VersionReportServiceTests: XCTestCase {
         XCTAssertFalse(service.compareVersions("2.10.0", "2.9.0"))
     }
 
+    func testMarkingAnUpdateAsReadUpdatesTheVisibleUnreadCount() {
+        let service = makeService()
+        let config = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")
+
+        service.saveAppConfigs([config])
+        service.saveAppState([
+            config.id: makeState(version: "26.0", hasUnreadUpdate: true)
+        ])
+        service.loadApps()
+
+        XCTAssertEqual(service.unreadUpdateCount(), 1)
+        XCTAssertTrue(service.apps[0].hasUnreadUpdate)
+
+        service.markUpdatesAsRead(for: [config.id])
+
+        XCTAssertEqual(service.unreadUpdateCount(), 0)
+        XCTAssertFalse(service.apps[0].hasUnreadUpdate)
+        XCTAssertFalse(service.loadAppState()[config.id]?.hasUnreadUpdate ?? true)
+    }
+
+    func testMarkingAnUpdateAsUnreadUpdatesTheVisibleUnreadCount() {
+        let service = makeService()
+        let config = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")
+
+        service.saveAppConfigs([config])
+        service.saveAppState([
+            config.id: makeState(version: "26.0")
+        ])
+        service.loadApps()
+
+        service.markUpdatesAsUnread(for: [config.id])
+
+        XCTAssertEqual(service.unreadUpdateCount(), 1)
+        XCTAssertTrue(service.apps[0].hasUnreadUpdate)
+        XCTAssertTrue(service.loadAppState()[config.id]?.hasUnreadUpdate ?? false)
+    }
+
     private func makeService(bundledLibraryURL: URL? = nil) -> VersionReportService {
         VersionReportService(
             baseURL: testDirectory,
@@ -126,14 +163,14 @@ final class VersionReportServiceTests: XCTestCase {
         )
     }
 
-    private func makeState(version: String) -> AppState {
+    private func makeState(version: String, hasUnreadUpdate: Bool = false) -> AppState {
         AppState(
             version: version,
             previousVersion: nil,
             parserType: "jq",
             lastChecked: ISO8601DateFormatter().string(from: Date()),
             lastUpdated: "Never",
-            hasUnreadUpdate: false
+            hasUnreadUpdate: hasUnreadUpdate
         )
     }
 
