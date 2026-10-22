@@ -569,5 +569,23 @@
     "name": "Zoom",
     "sourceType": "homebrew",
     "caskName": "zoom"
+  },
+  {
+    "id": "boxing_day",
+    "name": "Boxing Day",
+    "sourceType": "github",
+    "repoPath": "sherrodsoftware/BoxingDay"
+  },
+  {
+    "id": "bundle_report",
+    "name": "Bundle Report",
+    "sourceType": "github",
+    "repoPath": "sherrodsoftware/BundleReport"
+  },
+  {
+    "id": "version_report",
+    "name": "Version Report",
+    "sourceType": "github",
+    "repoPath": "sherrodsoftware/VersionReport"
   }
 ]
