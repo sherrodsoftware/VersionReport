@@ -40,6 +40,20 @@ struct Version_ReportApp: App {
             )
         }
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("About Version Report") {
+                    NSApplication.shared.orderFrontStandardAboutPanel(options: [
+                        .applicationName: "Version Report",
+                        .credits: NSAttributedString(
+                            string: "© Sherrod Software\nwww.sherrodsoftware.com",
+                            attributes: [
+                                .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+                                .link: URL(string: "https://www.sherrodsoftware.com")!
+                            ]
+                        )
+                    ])
+                }
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Group") {
                     uiState.onNewGroupRequested()
