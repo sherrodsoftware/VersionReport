@@ -389,9 +389,44 @@ struct ContentView: View {
         .frame(minHeight: 360)
     }
 
+    @ViewBuilder private var emptyState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "square.stack")
+                .font(.system(size: 48))
+                .foregroundStyle(.tertiary)
+
+            Text("No Apps Yet")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text("Add the apps you manage to start tracking their versions.")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 280)
+
+            HStack(spacing: 10) {
+                Button("Add App…") {
+                    uiState.editingOriginalAppID = nil
+                    uiState.showingAddAppSheet = true
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button("Add From Library…") {
+                    uiState.showingLibrarySheet = true
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     @ViewBuilder private var contentColumn: some View {
         VStack(alignment: .leading, spacing: 0) {
-            appsTable
+            if service.apps.isEmpty {
+                emptyState
+            } else {
+                appsTable
+            }
 
             HStack {
                 ControlGroup {
