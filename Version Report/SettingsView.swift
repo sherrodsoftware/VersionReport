@@ -10,11 +10,44 @@ import SwiftUI
 
 struct SettingsView: View {
 
+    @AppStorage("checkFrequency") private var checkFrequencyRaw = CheckFrequency.onLaunch.rawValue
     @State private var teamsWebhookURL = ""
     @State private var statusMessage = ""
 
+    private var checkFrequency: Binding<CheckFrequency> {
+        Binding(
+            get: { CheckFrequency(rawValue: checkFrequencyRaw) ?? .onLaunch },
+            set: { checkFrequencyRaw = $0.rawValue }
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
+
+            Text("General")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            GroupBox("Automatic Updates") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("How often Version Report should check for new app versions.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Picker("Check for updates", selection: checkFrequency) {
+                        ForEach(CheckFrequency.allCases, id: \.self) { freq in
+                            Text(freq.displayName).tag(freq)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    .labelsHidden()
+                }
+                .padding(.top, 6)
+            }
+
+            Divider()
 
             Text("Notifications")
                 .font(.title2)

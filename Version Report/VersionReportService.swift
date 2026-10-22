@@ -4,6 +4,34 @@ import UserNotifications
 import UniformTypeIdentifiers
 import Combine
 
+enum CheckFrequency: String, CaseIterable {
+    case onLaunch = "onLaunch"
+    case hourly = "hourly"
+    case every6Hours = "every6Hours"
+    case daily = "daily"
+    case manual = "manual"
+
+    var displayName: String {
+        switch self {
+        case .onLaunch:    return "On launch (at most once per hour)"
+        case .hourly:      return "Every hour"
+        case .every6Hours: return "Every 6 hours"
+        case .daily:       return "Every day"
+        case .manual:      return "Manually only"
+        }
+    }
+
+    var interval: TimeInterval? {
+        switch self {
+        case .onLaunch:    return nil
+        case .hourly:      return 3600
+        case .every6Hours: return 6 * 3600
+        case .daily:       return 24 * 3600
+        case .manual:      return nil
+        }
+    }
+}
+
 enum VersionFetchError: Error, LocalizedError {
     case rateLimited(source: String)
     case httpError(source: String, statusCode: Int)
@@ -1366,28 +1394,33 @@ final class VersionReportService: ObservableObject {
         }
     }
 
-    func scheduleNextHourlyCheck() {
-
-        hourlyTimer?.invalidate()
-
-        let calendar = Calendar.current
-        let now = Date()
-
-        guard let nextHour = calendar.nextDate(
-            after: now,
-            matching: DateComponents(minute: 0, second: 0),
-            matchingPolicy: .nextTime
-        ) else {
+    func runLaunchCheck() {
+        let freq = CheckFrequency(rawValue: UserDefaults.standard.string(forKey: "checkFrequency") ?? "") ?? .onLaunch
+        guard freq == .onLaunch else {
+            scheduleAutoCheck()
             return
         }
-
-        let interval = nextHour.timeIntervalSince(now)
-
-        hourlyTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
-            self?.runVersionCheck()
-            self?.scheduleNextHourlyCheck()
+        // Only check if last check was more than 1 hour ago (or never).
+        let allStates = loadAppState()
+        let mostRecent = allStates.values
+            .compactMap { Self.iso8601Parser.date(from: $0.lastChecked) }
+            .max()
+        if let last = mostRecent, Date().timeIntervalSince(last) < 3600 {
+            return
         }
+        runVersionCheck()
+    }
 
+    func scheduleAutoCheck() {
+        hourlyTimer?.invalidate()
+        hourlyTimer = nil
+
+        let freq = CheckFrequency(rawValue: UserDefaults.standard.string(forKey: "checkFrequency") ?? "") ?? .onLaunch
+        guard let interval = freq.interval else { return }
+
+        hourlyTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.runVersionCheck()
+        }
     }
 
     func stopHourlyCheck() {

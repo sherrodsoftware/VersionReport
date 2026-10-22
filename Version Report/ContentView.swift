@@ -584,7 +584,8 @@ struct ContentView: View {
             service.requestNotificationPermission()
             service.loadApps()
             applySortOrder(for: service.apps)
-            service.scheduleNextHourlyCheck()
+            service.runLaunchCheck()
+            service.scheduleAutoCheck()
             if let data = UserDefaults.standard.data(forKey: "columnCustomization"),
                let saved = try? JSONDecoder().decode(TableColumnCustomization<MonitoredApp>.self, from: data) {
                 columnCustomization = saved
