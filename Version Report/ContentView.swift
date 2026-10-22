@@ -27,6 +27,7 @@ struct MonitoredApp: Identifiable, Equatable {
     let lastUpdated: Date?
     let iconName: String
     let hasUnreadUpdate: Bool
+    let lastCheckError: String?
 
     var unreadSortValue: Int {
         hasUnreadUpdate ? 1 : 0
@@ -247,11 +248,15 @@ struct ContentView: View {
     @ViewBuilder private var appsTable: some View {
         Table(filteredApps, selection: $uiState.selectedAppIDs, sortOrder: $sortOrder, columnCustomization: $columnCustomization) {
             TableColumn("", value: \.unreadSortValue) { app in
-                if app.hasUnreadUpdate {
+                if app.lastCheckError != nil {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.orange)
+                } else if app.hasUnreadUpdate {
                     Circle().frame(width: 8, height: 8).foregroundStyle(.blue)
                 }
             }
-            .width(8)
+            .width(16)
 
             TableColumn("") { app in
                 Image(nsImage: service.icon(for: app))
@@ -456,7 +461,7 @@ struct ContentView: View {
 
                 Text(service.statusMessage)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(service.checkHadErrors ? .orange : .secondary)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)

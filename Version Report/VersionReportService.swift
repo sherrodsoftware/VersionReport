@@ -137,13 +137,15 @@ struct AppState: Codable {
     var lastChecked: String
     var lastUpdated: String?
     var hasUnreadUpdate: Bool
+    var lastCheckError: String?
 
-    init(version: String, previousVersion: String?, lastChecked: String, lastUpdated: String?, hasUnreadUpdate: Bool) {
+    init(version: String, previousVersion: String?, lastChecked: String, lastUpdated: String?, hasUnreadUpdate: Bool, lastCheckError: String? = nil) {
         self.version = version
         self.previousVersion = previousVersion
         self.lastChecked = lastChecked
         self.lastUpdated = lastUpdated
         self.hasUnreadUpdate = hasUnreadUpdate
+        self.lastCheckError = lastCheckError
     }
 
     init(from decoder: Decoder) throws {
@@ -154,6 +156,7 @@ struct AppState: Codable {
         let rawLastUpdated = try container.decodeIfPresent(String.self, forKey: .lastUpdated)
         lastUpdated = rawLastUpdated == "Never" ? nil : rawLastUpdated
         hasUnreadUpdate = try container.decodeIfPresent(Bool.self, forKey: .hasUnreadUpdate) ?? false
+        lastCheckError = try container.decodeIfPresent(String.self, forKey: .lastCheckError)
     }
 }
 
@@ -166,6 +169,7 @@ final class VersionReportService: ObservableObject {
     }
     @Published var isChecking = false
     @Published var statusMessage = "Ready"
+    @Published var checkHadErrors = false
     @Published var pendingLibraryConflicts: [LibraryConflict] = []
     @Published var groups: [AppGroup] = []
 
@@ -824,7 +828,9 @@ final class VersionReportService: ObservableObject {
                     if let error {
                         print("Check failed for \(config.name): \(error)")
                         fetchErrors.append("\(config.name): \(error.localizedDescription)")
+                        saveCheckError(error.localizedDescription, for: config)
                     } else if let version {
+                        clearCheckError(for: config)
                         let result = updateAppState(version: version, for: config)
 
                         if result.didUpdate {
@@ -856,13 +862,14 @@ final class VersionReportService: ObservableObject {
             await MainActor.run {
                 self.apps = updatedApps
                 self.isChecking = false
+                self.checkHadErrors = !fetchErrors.isEmpty
                 if fetchErrors.isEmpty {
                     self.statusMessage = "Check completed at \(completionTime)"
                 } else {
-                    let summary = fetchErrors.count == 1
-                        ? fetchErrors[0]
-                        : "\(fetchErrors.count) apps failed (\(fetchErrors.joined(separator: "; ")))"
-                    self.statusMessage = "Check completed at \(completionTime) — \(summary)"
+                    let count = fetchErrors.count
+                    self.statusMessage = count == 1
+                        ? "Check completed at \(completionTime) — \(count) app failed"
+                        : "Check completed at \(completionTime) — \(count) apps failed"
                 }
             }
 
@@ -1022,6 +1029,26 @@ final class VersionReportService: ObservableObject {
         return (previousVersion, didUpdate)
     }
 
+    func saveCheckError(_ message: String, for config: AppConfig) {
+        var appState = loadAppState()
+        let existing = appState[config.id]
+        appState[config.id] = AppState(
+            version: existing?.version ?? "Unknown",
+            previousVersion: existing?.previousVersion,
+            lastChecked: Self.iso8601Writer.string(from: Date()),
+            lastUpdated: existing?.lastUpdated,
+            hasUnreadUpdate: existing?.hasUnreadUpdate ?? false,
+            lastCheckError: message
+        )
+        saveAppState(appState)
+    }
+
+    func clearCheckError(for config: AppConfig) {
+        var appState = loadAppState()
+        appState[config.id]?.lastCheckError = nil
+        saveAppState(appState)
+    }
+
     func parseJSONValue(from data: Data, keyPath: String) -> String? {
         guard let json = try? JSONSerialization.jsonObject(with: data) else {
             return nil
@@ -1169,7 +1196,8 @@ final class VersionReportService: ObservableObject {
                     lastChecked: state.flatMap { Self.iso8601Parser.date(from: $0.lastChecked) },
                     lastUpdated: state.flatMap { $0.lastUpdated.flatMap { Self.iso8601Parser.date(from: $0) } },
                     iconName: config.id,
-                    hasUnreadUpdate: state?.hasUnreadUpdate ?? false
+                    hasUnreadUpdate: state?.hasUnreadUpdate ?? false,
+                    lastCheckError: state?.lastCheckError
                 )
             )
 

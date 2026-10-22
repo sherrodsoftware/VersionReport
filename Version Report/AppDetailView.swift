@@ -80,6 +80,22 @@ struct AppDetailView: View {
 
                 Divider()
 
+                if let error = app.lastCheckError {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(error)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+
+                    Divider()
+                }
+
                 VStack(alignment: .leading, spacing: 8) {
                     detailRow("Current Version", value: app.displayVersion)
 
