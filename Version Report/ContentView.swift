@@ -465,7 +465,7 @@ struct ContentView: View {
                     }
                     .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
                 }
-                .background(TrackingSeparatorInstaller(dividerIndex: 1))
+
             } else {
                 NavigationSplitView {
                     SidebarView(service: service, selection: $sidebarSelection)
