@@ -75,6 +75,7 @@ struct ContentView: View {
     @State private var showingNewGroupAlert = false
     @State private var newGroupName = ""
 
+
     private var filteredApps: [MonitoredApp] {
         var baseApps = service.apps
 
@@ -464,6 +465,7 @@ struct ContentView: View {
                     }
                     .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
                 }
+                .background(TrackingSeparatorInstaller(dividerIndex: 1))
             } else {
                 NavigationSplitView {
                     SidebarView(service: service, selection: $sidebarSelection)
@@ -505,6 +507,36 @@ struct ContentView: View {
                 Text("Remove \(selectedApp.name) from Version Report?")
             } else {
                 Text("Remove \(selectedApps.count) apps from Version Report?")
+            }
+        }
+        .searchable(text: $searchText, placement: .toolbar)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    service.runVersionCheck()
+                } label: {
+                    Label("Check for Updates", systemImage: "arrow.clockwise")
+                }
+                .disabled(service.isChecking)
+                .help("Check for Updates")
+            }
+            ToolbarItem(placement: .automatic) {
+                Menu {
+                    Toggle("Current Build", isOn: $showBuildNumberColumn)
+                    Toggle("Previous Version", isOn: $showPreviousVersionColumn)
+                    Toggle("Source", isOn: $showSourceColumn)
+                } label: {
+                    Label("Columns", systemImage: "checklist")
+                }
+                .help("Show or hide optional columns")
+            }
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    showAppDetail.toggle()
+                } label: {
+                    Label("App Details", systemImage: "sidebar.right")
+                }
+                .help(showAppDetail ? "Hide App Details" : "Show App Details")
             }
         }
         .frame(minWidth: 960, minHeight: 560)
@@ -579,39 +611,7 @@ struct ContentView: View {
                 }
             }
         }
-        .searchable(text: $searchText, placement: .toolbar)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    service.runVersionCheck()
-                } label: {
-                    Label("Check for Updates", systemImage: "arrow.clockwise")
-                }
-                .disabled(service.isChecking)
-                .help("Check for Updates")
-            }
-
-            ToolbarItem(placement: .automatic) {
-                Menu {
-                    Toggle("Current Build", isOn: $showBuildNumberColumn)
-                    Toggle("Previous Version", isOn: $showPreviousVersionColumn)
-                    Toggle("Source", isOn: $showSourceColumn)
-                } label: {
-                    Label("Columns", systemImage: "checklist")
-                }
-                .help("Show or hide optional columns")
-            }
-
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    showAppDetail.toggle()
-                } label: {
-                    Label("App Details", systemImage: "sidebar.right")
-                }
-                .help(showAppDetail ? "Hide App Details" : "Show App Details")
-            }
-        }
-
     }
+
 
 }

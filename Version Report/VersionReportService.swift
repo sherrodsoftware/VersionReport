@@ -1199,6 +1199,29 @@ final class VersionReportService: ObservableObject {
         icon(forID: app.iconName)
     }
 
+    func saveCustomIcon(_ image: NSImage, forID id: String) {
+        let iconsURL = baseURL.appendingPathComponent("icons")
+        try? FileManager.default.createDirectory(at: iconsURL, withIntermediateDirectories: true)
+        let dest = iconsURL.appendingPathComponent("\(id).png")
+
+        // Render at 128×128 — enough for @2x display at 64pt
+        let size = CGSize(width: 128, height: 128)
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 128, pixelsHigh: 128,
+                                   bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                   isPlanar: false, colorSpaceName: .deviceRGB,
+                                   bytesPerRow: 0, bitsPerPixel: 0)!
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        image.draw(in: NSRect(origin: .zero, size: size),
+                   from: .zero, operation: .copy, fraction: 1)
+        NSGraphicsContext.restoreGraphicsState()
+
+        if let data = rep.representation(using: .png, properties: [:]) {
+            try? data.write(to: dest)
+            objectWillChange.send()
+        }
+    }
+
 
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in

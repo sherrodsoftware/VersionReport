@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct AppDetailView: View {
 
@@ -6,8 +7,26 @@ struct AppDetailView: View {
     let service: VersionReportService
     let onEdit: () -> Void
 
+    @State private var iconDropTargeted = false
+
     private func formatDate(_ date: Date?) -> String {
         date?.formatted(date: .abbreviated, time: .shortened) ?? "Never"
+    }
+
+    private func handleIconDrop(_ providers: [NSItemProvider]) -> Bool {
+        let imageTypes = [UTType.image, UTType.png, UTType.jpeg, UTType.tiff, UTType.icns]
+        guard let provider = providers.first(where: { p in
+            imageTypes.contains { p.hasItemConformingToTypeIdentifier($0.identifier) }
+        }) else { return false }
+
+        let type = imageTypes.first { provider.hasItemConformingToTypeIdentifier($0.identifier) }!
+        provider.loadDataRepresentation(for: type) { data, _ in
+            guard let data, let image = NSImage(data: data) else { return }
+            DispatchQueue.main.async {
+                service.saveCustomIcon(image, forID: app.iconName)
+            }
+        }
+        return true
     }
 
     var body: some View {
@@ -15,10 +34,30 @@ struct AppDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
 
                 HStack(spacing: 16) {
-                    Image(nsImage: service.icon(for: app))
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 64, height: 64)
+                    ZStack(alignment: .bottomTrailing) {
+                        Image(nsImage: service.icon(for: app))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                        // Camera badge — always visible to signal the drop zone
+                        Image(systemName: "camera.circle.fill")
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, iconDropTargeted ? Color.accentColor : Color.secondary)
+                            .font(.system(size: 18))
+                            .offset(x: 4, y: 4)
+                    }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(iconDropTargeted ? Color.accentColor : Color.secondary.opacity(0.3),
+                                          style: StrokeStyle(lineWidth: iconDropTargeted ? 2 : 1,
+                                                             dash: iconDropTargeted ? [] : [4, 3]))
+                    )
+                    .onDrop(of: [.image, .png, .jpeg, .tiff, .icns],
+                            isTargeted: $iconDropTargeted,
+                            perform: handleIconDrop)
+                    .help("Drag an image here to set a custom icon")
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(app.name)
