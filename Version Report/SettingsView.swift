@@ -58,6 +58,7 @@ struct SettingsView: View {
         }
         .padding(24)
         .frame(width: 520)
+        .fixedSize(horizontal: false, vertical: true)
         .onAppear {
             teamsWebhookURL = KeychainHelper.shared.loadTeamsWebhookURL() ?? ""
         }

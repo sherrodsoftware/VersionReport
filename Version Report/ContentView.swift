@@ -1,93 +1,89 @@
 import SwiftUI
 import Foundation
 
-let versionReportBaseURL =
-    FileManager.default
+let versionReportBaseURL: URL = {
+    guard let url = FileManager.default
         .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        .first!
-        .appendingPathComponent("Version Report")
+        .first
+    else {
+        fatalError("Application Support directory not found")
+    }
+    return url.appendingPathComponent("Version Report")
+}()
 
 extension Notification.Name {
-    static let versionReportRefresh = Notification.Name("versionReportRefresh")
     static let versionReportCheckNow = Notification.Name("versionReportCheckNow")
     static let versionReportCopyVersion = Notification.Name("versionReportCopyVersion")
     static let versionReportRefreshDockBadge = Notification.Name("versionReportRefreshDockBadge")
 }
 
-struct MonitoredApp: Identifiable {
+struct MonitoredApp: Identifiable, Equatable {
     let id: String
     let name: String
     let version: String
     let previousVersion: String
     let sourceType: String
-    let lastChecked: String
-    let lastUpdated: String
+    let lastChecked: Date?
+    let lastUpdated: Date?
     let iconName: String
     let hasUnreadUpdate: Bool
 
     var unreadSortValue: Int {
         hasUnreadUpdate ? 1 : 0
     }
-}
 
-struct SearchField: NSViewRepresentable {
-    @Binding var text: String
-
-    func makeNSView(context: Context) -> NSSearchField {
-        let searchField = NSSearchField()
-        searchField.placeholderString = "Search"
-        searchField.delegate = context.coordinator
-        return searchField
+    var lastCheckedSortValue: TimeInterval {
+        lastChecked?.timeIntervalSinceReferenceDate ?? 0
     }
 
-    func updateNSView(_ nsView: NSSearchField, context: Context) {
-        if nsView.stringValue != text {
-            nsView.stringValue = text
-        }
+    var lastUpdatedSortValue: TimeInterval {
+        lastUpdated?.timeIntervalSinceReferenceDate ?? 0
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text)
+    var displayVersion: String {
+        String(version.prefix(while: { $0 != "," }))
     }
 
-    final class Coordinator: NSObject, NSSearchFieldDelegate {
-        @Binding var text: String
+    var displayPreviousVersion: String {
+        String(previousVersion.prefix(while: { $0 != "," }))
+    }
 
-        init(text: Binding<String>) {
-            _text = text
-        }
-
-        func controlTextDidChange(_ notification: Notification) {
-            guard let searchField = notification.object as? NSSearchField else {
-                return
-            }
-
-            text = searchField.stringValue
-        }
+    var buildNumber: String? {
+        guard let commaIndex = version.firstIndex(of: ",") else { return nil }
+        let build = String(version[version.index(after: commaIndex)...])
+        return build.isEmpty ? nil : build
     }
 }
+
 
 struct ContentView: View {
 
     @ObservedObject var service: VersionReportService
     @ObservedObject var uiState: AppUIState
     @State private var sortOrder = [KeyPathComparator(\MonitoredApp.name)]
-    @AppStorage("showParserColumn") private var showParserColumn = false
+    @State private var columnCustomization = TableColumnCustomization<MonitoredApp>()
+    @AppStorage("showSourceColumn") private var showSourceColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
-
-    @State private var newAppName = ""
-    @State private var newVersionURL = ""
-    @State private var newParserType = "jq"
-    @State private var newParserValue = ""
-    @State private var parserTestResult = ""
-    @State private var isTestingParser = false
+    @AppStorage("showBuildNumberColumn") private var showBuildNumberColumn = false
+    @AppStorage("showAppDetail") private var showAppDetail = false
 
     @State private var searchText = ""
     @State private var librarySearchText = ""
     @State private var selectedLibraryAppIDs = Set<String>()
+    @State private var cachedLibraryApps: [AppConfig] = []
+    @State private var sidebarSelection: SidebarSelection? = .allApps
+    @State private var showingNewGroupAlert = false
+    @State private var newGroupName = ""
 
     private var filteredApps: [MonitoredApp] {
-        let sortedApps = service.apps.sorted(using: sortOrder)
+        var baseApps = service.apps
+
+        if case .group(let groupID) = sidebarSelection ?? .allApps,
+           let group = service.groups.first(where: { $0.id == groupID }) {
+            baseApps = baseApps.filter { group.appIDs.contains($0.id) }
+        }
+
+        let sortedApps = baseApps.sorted(using: sortOrder)
 
         guard !searchText.isEmpty else {
             return sortedApps
@@ -98,17 +94,45 @@ struct ContentView: View {
         }
     }
 
-    private var availableLibraryApps: [AppConfig] {
-        let monitoredAppNames = Set(service.loadAppConfigs().map { $0.name })
-        let libraryApps = service.loadAppLibrary().filter { !monitoredAppNames.contains($0.name) }
+    private var selectedApp: MonitoredApp? {
+        guard uiState.selectedAppIDs.count == 1,
+              let id = uiState.selectedAppIDs.first else { return nil }
+        return service.apps.first { $0.id == id }
+    }
 
+    private var availableLibraryApps: [AppConfig] {
         guard !librarySearchText.isEmpty else {
-            return libraryApps
+            return cachedLibraryApps
         }
 
-        return libraryApps.filter {
+        return cachedLibraryApps.filter {
             $0.name.localizedCaseInsensitiveContains(librarySearchText)
         }
+    }
+
+    private func applySortOrder(for apps: [MonitoredApp]) {
+        if apps.contains(where: { $0.hasUnreadUpdate }) {
+            sortOrder = [KeyPathComparator(\MonitoredApp.unreadSortValue, order: .reverse), KeyPathComparator(\MonitoredApp.name)]
+        } else {
+            sortOrder = [KeyPathComparator(\MonitoredApp.name)]
+        }
+    }
+
+    private func loadCachedLibraryApps() {
+        let monitoredAppNames = Set(service.loadAppConfigs().map { $0.name })
+        cachedLibraryApps = service.loadAppLibrary().filter { !monitoredAppNames.contains($0.name) }
+    }
+
+    private func formatDate(_ date: Date?) -> String {
+        date?.formatted(date: .abbreviated, time: .shortened) ?? "Never"
+    }
+
+    private func selectedAppsContainUnread(_ ids: Set<MonitoredApp.ID>) -> Bool {
+        ids.contains { id in service.apps.first(where: { $0.id == id })?.hasUnreadUpdate == true }
+    }
+
+    private func selectedAppsContainRead(_ ids: Set<MonitoredApp.ID>) -> Bool {
+        ids.contains { id in service.apps.first(where: { $0.id == id })?.hasUnreadUpdate == false }
     }
 
     private func editSelectedApp() {
@@ -119,12 +143,6 @@ struct ContentView: View {
         }
 
         uiState.editingOriginalAppID = config.id
-        newAppName = config.name
-        newVersionURL = config.versionURL.absoluteString
-        newParserType = config.parserType
-        newParserValue = config.parserValue
-        parserTestResult = ""
-        isTestingParser = false
         uiState.showingAddAppSheet = true
     }
 
@@ -158,19 +176,7 @@ struct ContentView: View {
     }
 
     private func libraryIcon(for config: AppConfig) -> NSImage {
-        let app = MonitoredApp(
-            id: config.id,
-            name: config.name,
-            version: "",
-            previousVersion: "",
-            sourceType: config.parserType,
-            lastChecked: "",
-            lastUpdated: "",
-            iconName: config.id,
-            hasUnreadUpdate: false
-        )
-
-        return service.icon(for: app)
+        service.icon(forID: config.id)
     }
 
     private var librarySheet: some View {
@@ -198,7 +204,7 @@ struct ContentView: View {
                             Text(app.name)
                                 .font(.body)
 
-                            Text(app.parserType)
+                            Text(app.source.displayName)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -237,126 +243,154 @@ struct ContentView: View {
         .frame(width: 500, height: 420)
     }
 
-    var body: some View {
-
-        VStack(alignment: .leading, spacing: 12) {
-
-            Table(filteredApps, selection: $uiState.selectedAppIDs, sortOrder: $sortOrder) {
-
-                TableColumn("", value: \.unreadSortValue) { app in
-                    if app.hasUnreadUpdate {
-                        Circle()
-                            .frame(width: 8, height: 8)
-                            .foregroundStyle(.blue)
-                    }
+    @ViewBuilder private var appsTable: some View {
+        Table(filteredApps, selection: $uiState.selectedAppIDs, sortOrder: $sortOrder, columnCustomization: $columnCustomization) {
+            TableColumn("", value: \.unreadSortValue) { app in
+                if app.hasUnreadUpdate {
+                    Circle().frame(width: 8, height: 8).foregroundStyle(.blue)
                 }
-                .width(8)
-
-                TableColumn("") { app in
-                    Image(nsImage: service.icon(for: app))
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
-                }
-                .width(32)
-
-                TableColumn("App", value: \.name) { app in
-                    Text(app.name)
-                        .lineLimit(1)
-                }
-                .width(min: 180, ideal: 220)
-
-                TableColumn("Current Version", value: \.version) { app in
-                    Text(app.version)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                .width(min: 90, ideal: 110)
-
-                if showPreviousVersionColumn {
-                    TableColumn("Previous Version", value: \.previousVersion) { app in
-                        Text(app.previousVersion)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    .width(min: 100, ideal: 120)
-                }
-
-                if showParserColumn {
-                    TableColumn("Parser", value: \.sourceType) { app in
-                        Text(app.sourceType)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    .width(min: 110, ideal: 130)
-                }
-
-                TableColumn("Last Checked", value: \.lastChecked) { app in
-                    Text(app.lastChecked)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                .width(min: 160, ideal: 180)
-
-                TableColumn("Last Updated", value: \.lastUpdated) { app in
-                    Text(app.lastUpdated)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                .width(min: 160, ideal: 180)
-
             }
-            .selectionDisabled(false)
-            .contextMenu(forSelectionType: MonitoredApp.ID.self) { selectedAppIDs in
-                Button("Copy Version") {
-                    guard let selectedAppID = selectedAppIDs.first else {
-                        return
+            .width(8)
+
+            TableColumn("") { app in
+                Image(nsImage: service.icon(for: app))
+                    .resizable().scaledToFit().frame(width: 20, height: 20)
+            }
+            .width(32)
+
+            TableColumn("App", value: \.name) { app in
+                Text(app.name).lineLimit(1)
+                    .onTapGesture(count: 2) {
+                        uiState.selectedAppIDs = [app.id]
+                        showAppDetail = true
                     }
+            }
+            .width(min: 180, ideal: 220)
+            .customizationID("app")
 
-                    uiState.selectedAppIDs = [selectedAppID]
-                    copySelectedVersion()
+            TableColumn("Current Version", value: \.version) { app in
+                Text(app.displayVersion).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .width(min: 90, ideal: 110)
+            .customizationID("currentVersion")
+
+            if showBuildNumberColumn {
+                TableColumn("Current Build", value: \.version) { app in
+                    Text(app.buildNumber ?? "—").foregroundStyle(.secondary).lineLimit(1)
                 }
-                .disabled(selectedAppIDs.count != 1)
+                .width(min: 80, ideal: 100)
+                .customizationID("currentBuild")
+            }
 
-                Button("Mark as Read") {
-                    uiState.selectedAppIDs = selectedAppIDs
-                    markSelectedUpdatesAsRead()
+            if showPreviousVersionColumn {
+                TableColumn("Previous Version", value: \.previousVersion) { app in
+                    Text(app.displayPreviousVersion).foregroundStyle(.secondary).lineLimit(1)
                 }
-                .disabled(!selectedAppIDs.contains { selectedAppID in
-                    service.apps.first(where: { $0.id == selectedAppID })?.hasUnreadUpdate == true
-                })
+                .width(min: 100, ideal: 120)
+                .customizationID("previousVersion")
+            }
 
-                Button("Mark as Unread") {
-                    uiState.selectedAppIDs = selectedAppIDs
-                    markSelectedUpdatesAsUnread()
+            if showSourceColumn {
+                TableColumn("Source", value: \.sourceType) { app in
+                    Text(app.sourceType).foregroundStyle(.secondary).lineLimit(1)
                 }
-                .disabled(!selectedAppIDs.contains { selectedAppID in
-                    service.apps.first(where: { $0.id == selectedAppID })?.hasUnreadUpdate == false
-                })
+                .width(min: 110, ideal: 130)
+                .customizationID("source")
+            }
 
+            TableColumn("Last Checked", value: \.lastCheckedSortValue) { app in
+                Text(formatDate(app.lastChecked)).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .width(min: 160, ideal: 180)
+            .customizationID("lastChecked")
+
+            TableColumn("Last Updated", value: \.lastUpdatedSortValue) { app in
+                Text(formatDate(app.lastUpdated)).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .width(min: 160, ideal: 180)
+            .customizationID("lastUpdated")
+        }
+        .background(
+            TableDragSourceView(
+                filteredApps: filteredApps,
+                selectedAppIDs: uiState.selectedAppIDs,
+                iconProvider: { service.icon(for: $0) }
+            )
+        )
+        .selectionDisabled(false)
+        .contextMenu(forSelectionType: MonitoredApp.ID.self) { ids in
+            Button("Copy Version") {
+                guard let id = ids.first else { return }
+                uiState.selectedAppIDs = [id]
+                copySelectedVersion()
+            }
+            .disabled(ids.count != 1)
+
+            Button("Mark as Read") {
+                uiState.selectedAppIDs = ids
+                markSelectedUpdatesAsRead()
+            }
+            .disabled(!selectedAppsContainUnread(ids))
+
+            Button("Mark as Unread") {
+                uiState.selectedAppIDs = ids
+                markSelectedUpdatesAsUnread()
+            }
+            .disabled(!selectedAppsContainRead(ids))
+
+            Divider()
+
+            Button("Edit App…") {
+                guard let id = ids.first else { return }
+                uiState.selectedAppIDs = [id]
+                editSelectedApp()
+            }
+            .disabled(ids.isEmpty)
+
+            Button("Delete App") {
+                guard let id = ids.first else { return }
+                uiState.selectedAppIDs = [id]
+                uiState.showingDeleteConfirmation = true
+            }
+            .disabled(ids.isEmpty)
+
+            if !service.groups.isEmpty {
                 Divider()
 
-                Button("Edit App…") {
-                    guard let selectedAppID = selectedAppIDs.first else {
-                        return
+                Menu("Add to Group") {
+                    ForEach(service.groups) { group in
+                        Button(group.name) {
+                            for id in ids {
+                                service.addApp(id, toGroup: group.id)
+                            }
+                        }
                     }
-
-                    uiState.selectedAppIDs = [selectedAppID]
-                    uiState.editRequested = true
                 }
-                .disabled(selectedAppIDs.isEmpty)
+                .disabled(ids.isEmpty)
 
-                Button("Delete App") {
-                    guard let selectedAppID = selectedAppIDs.first else {
-                        return
+                Menu("Remove from Group") {
+                    let memberGroups = service.groups.filter { group in
+                        ids.contains { group.appIDs.contains($0) }
                     }
-
-                    uiState.selectedAppIDs = [selectedAppID]
-                    uiState.deleteRequested = true
+                    ForEach(memberGroups) { group in
+                        Button(group.name) {
+                            for id in ids {
+                                service.removeApp(id, fromGroup: group.id)
+                            }
+                        }
+                    }
                 }
-                .disabled(selectedAppIDs.isEmpty)
+                .disabled({
+                    !service.groups.contains { group in ids.contains { group.appIDs.contains($0) } }
+                }())
             }
-            .frame(minHeight: 360)
+        }
+        .frame(minHeight: 360)
+    }
+
+    @ViewBuilder private var contentColumn: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            appsTable
 
             HStack {
                 ControlGroup {
@@ -365,177 +399,88 @@ struct ContentView: View {
                             uiState.editingOriginalAppID = nil
                             uiState.showingAddAppSheet = true
                         }
-
                         Button("Add App From Library…") {
                             uiState.showingLibrarySheet = true
                         }
                     } label: {
-                        Image(systemName: "plus")
-                            .frame(width: 16, height: 16)
+                        Image(systemName: "plus").frame(width: 16, height: 16)
                     }
                     .menuIndicator(.hidden)
 
                     Button {
-                        uiState.deleteRequested = true
+                        guard !uiState.selectedAppIDs.isEmpty else { return }
+                        uiState.showingDeleteConfirmation = true
                     } label: {
-                        Image(systemName: "minus")
-                            .frame(width: 16, height: 16)
+                        Image(systemName: "minus").frame(width: 16, height: 16)
                     }
                     .disabled(uiState.selectedAppIDs.isEmpty)
                 }
 
                 Spacer()
+
+                Text(service.statusMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
-            .padding(.leading, 4)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
 
-            Text(service.statusMessage)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
-        }
-        .padding(.horizontal)
-        .padding(.bottom)
-        .sheet(isPresented: $uiState.showingAddAppSheet) {
-            VStack(alignment: .leading, spacing: 12) {
-
-                Text(uiState.editingOriginalAppID == nil ? "Add App" : "Edit App")
-                    .font(.headline)
-
-                TextField("App Name", text: $newAppName)
-
-                TextField("Version URL", text: $newVersionURL)
-
-                Picker("Parser Type", selection: $newParserType) {
-                    ForEach(service.parserTypes(), id: \.self) { parser in
-                        Text(parser).tag(parser)
-                    }
-                }
-
-                TextField("Parser Value", text: $newParserValue)
-
-                Button(isTestingParser ? "Testing…" : "Test Parser") {
-                    guard let url = URL(string: newVersionURL) else {
-                        parserTestResult = "Invalid version URL"
-                        return
-                    }
-
-                    let config = AppConfig(
-                        name: newAppName.isEmpty ? "Parser Test" : newAppName,
-                        versionURL: url,
-                        parserType: newParserType,
-                        parserValue: newParserValue
-                    )
-
-                    isTestingParser = true
-                    parserTestResult = ""
-
-                    Task {
-                        do {
-                            if let version = try await service.fetchCurrentVersion(for: config) {
-                                await MainActor.run {
-                                    parserTestResult = "Found version: \(version)"
-                                    isTestingParser = false
-                                }
-                            } else {
-                                await MainActor.run {
-                                    parserTestResult = "No version found"
-                                    isTestingParser = false
-                                }
-                            }
-                        } catch {
-                            await MainActor.run {
-                                parserTestResult = "Parser test failed"
-                                isTestingParser = false
-                            }
-
-                            print("Parser test failed for \(config.name): \(error)")
-                        }
-                    }
-                }
-                .disabled(newVersionURL.isEmpty || newParserValue.isEmpty || isTestingParser)
-
-                if !parserTestResult.isEmpty {
-                    Text(parserTestResult)
+            if !service.pendingLibraryConflicts.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "info.circle.fill").foregroundStyle(.blue)
+                    Text(service.pendingLibraryConflicts.count == 1
+                        ? "Version Report now natively tracks \(service.pendingLibraryConflicts[0].bundledConfig.name)."
+                        : "\(service.pendingLibraryConflicts.count) apps you added are now natively tracked.")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                HStack {
-
-                    Button("Cancel") {
-                        parserTestResult = ""
-                        isTestingParser = false
-                        uiState.showingAddAppSheet = false
-                    }
-
                     Spacer()
+                    Button("Review") { uiState.showingLibraryConflictsSheet = true }
+                        .font(.footnote)
+                }
+                .padding(8)
+                .background(.blue.opacity(0.08))
+            }
+        }
+    }
 
-                    Button(uiState.editingOriginalAppID == nil ? "Save" : "Update") {
-                        guard let url = URL(string: newVersionURL) else {
-                            return
-                        }
+    var body: some View {
 
-                        let config = AppConfig(
-                            name: newAppName,
-                            versionURL: url,
-                            parserType: newParserType,
-                            parserValue: newParserValue
-                        )
-
-                        if let editingOriginalAppID = uiState.editingOriginalAppID {
-                            if let updatedConfig = service.updateAppConfig(config, replacingID: editingOriginalAppID) {
-                                service.loadApps()
-
-                                Task {
-                                    do {
-                                        if let version = try await service.fetchCurrentVersion(for: updatedConfig) {
-                                            _ = service.updateAppState(version: version, for: updatedConfig)
-
-                                            await MainActor.run {
-                                                service.reloadApps()
-
-                                                let formatter = DateFormatter()
-                                                formatter.timeStyle = .short
-                                                formatter.dateStyle = .none
-
-                                                service.statusMessage = "Updated \(updatedConfig.name) at \(formatter.string(from: Date()))"
-                                            }
-                                        } else {
-                                            await MainActor.run {
-                                                service.statusMessage = "Updated \(updatedConfig.name), but no version was found"
-                                            }
-                                        }
-                                    } catch {
-                                        await MainActor.run {
-                                            service.statusMessage = "Updated \(updatedConfig.name), but version lookup failed"
-                                        }
-
-                                        print("Updated check failed for \(updatedConfig.name): \(error)")
-                                    }
-                                }
+        Group {
+            if showAppDetail {
+                NavigationSplitView {
+                    SidebarView(service: service, selection: $sidebarSelection)
+                        .navigationSplitViewColumnWidth(min: 170, ideal: 210, max: 300)
+                } content: {
+                    contentColumn
+                        .navigationSplitViewColumnWidth(min: 380, ideal: 560)
+                } detail: {
+                    Group {
+                        if let app = selectedApp {
+                            AppDetailView(app: app, service: service) {
+                                editSelectedApp()
                             }
                         } else {
-                            service.addAppConfig(config)
+                            AppDetailPlaceholderView()
                         }
-
-                        newAppName = ""
-                        newVersionURL = ""
-                        newParserType = "jq"
-                        newParserValue = ""
-                        parserTestResult = ""
-                        isTestingParser = false
-                        self.uiState.editingOriginalAppID = nil
-
-                        uiState.showingAddAppSheet = false
                     }
-                    .disabled(newAppName.isEmpty || newVersionURL.isEmpty || newParserValue.isEmpty)
+                    .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
+                }
+            } else {
+                NavigationSplitView {
+                    SidebarView(service: service, selection: $sidebarSelection)
+                        .navigationSplitViewColumnWidth(min: 170, ideal: 210, max: 300)
+                } detail: {
+                    contentColumn
                 }
             }
-            .padding()
-            .frame(width: 500)
+        }
+        .sheet(isPresented: $uiState.showingAddAppSheet) {
+            AddEditAppSheet(service: service, uiState: uiState)
         }
         .sheet(isPresented: $uiState.showingLibrarySheet) {
             librarySheet
+        }
+        .sheet(isPresented: $uiState.showingLibraryConflictsSheet) {
+            LibraryConflictsSheet(service: service, uiState: uiState)
         }
         .alert("Delete App?", isPresented: $uiState.showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
@@ -562,33 +507,46 @@ struct ContentView: View {
                 Text("Remove \(selectedApps.count) apps from Version Report?")
             }
         }
-        .frame(minWidth: 780, minHeight: 560)
+        .frame(minWidth: 960, minHeight: 560)
         .onAppear {
             service.requestNotificationPermission()
             service.loadApps()
-            service.runVersionCheck()
+            applySortOrder(for: service.apps)
             service.scheduleNextHourlyCheck()
+            if let data = UserDefaults.standard.data(forKey: "columnCustomization"),
+               let saved = try? JSONDecoder().decode(TableColumnCustomization<MonitoredApp>.self, from: data) {
+                columnCustomization = saved
+            }
+            uiState.onEditRequested = { editSelectedApp() }
+            uiState.onDeleteRequested = {
+                guard !uiState.selectedAppIDs.isEmpty else { return }
+                uiState.showingDeleteConfirmation = true
+            }
+            uiState.onAddToLibraryRequested = { addSelectedAppToLibrary() }
+            uiState.onMarkAsReadRequested = { markSelectedUpdatesAsRead() }
+            uiState.onMarkAsUnreadRequested = { markSelectedUpdatesAsUnread() }
+            uiState.onNewGroupRequested = {
+                newGroupName = ""
+                showingNewGroupAlert = true
+            }
+            uiState.onNewGroupFromSelectionRequested = {
+                newGroupName = ""
+                showingNewGroupAlert = true
+            }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .versionReportRefresh)) { _ in
-            service.loadApps()
+        .onChange(of: service.apps) { _, apps in
+            applySortOrder(for: apps)
+        }
+        .onChange(of: columnCustomization) { _, newValue in
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: "columnCustomization")
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .versionReportCheckNow)) { _ in
             service.runVersionCheck()
         }
         .onReceive(NotificationCenter.default.publisher(for: .versionReportCopyVersion)) { _ in
             copySelectedVersion()
-        }
-        .onChange(of: uiState.showingAddAppSheet) { _, isShowing in
-            guard isShowing, uiState.editingOriginalAppID == nil else {
-                return
-            }
-
-            newAppName = ""
-            newVersionURL = ""
-            newParserType = "jq"
-            newParserValue = ""
-            parserTestResult = ""
-            isTestingParser = false
         }
         .onChange(of: uiState.showingLibrarySheet) { _, isShowing in
             guard isShowing else {
@@ -597,59 +555,60 @@ struct ContentView: View {
 
             librarySearchText = ""
             selectedLibraryAppIDs.removeAll()
-        }
-        .onChange(of: uiState.editRequested) { _, requested in
-            guard requested else {
-                return
-            }
-
-            editSelectedApp()
-            uiState.editRequested = false
-        }
-        .onChange(of: uiState.markAsReadRequested) { _, requested in
-            guard requested else {
-                return
-            }
-
-            markSelectedUpdatesAsRead()
-            uiState.markAsReadRequested = false
-        }
-        .onChange(of: uiState.markAsUnreadRequested) { _, requested in
-            guard requested else {
-                return
-            }
-
-            markSelectedUpdatesAsUnread()
-            uiState.markAsUnreadRequested = false
-        }
-        .onChange(of: uiState.deleteRequested) { _, requested in
-            guard requested else {
-                return
-            }
-
-            guard !uiState.selectedAppIDs.isEmpty else {
-                uiState.deleteRequested = false
-                return
-            }
-
-            uiState.showingDeleteConfirmation = true
-            uiState.deleteRequested = false
-        }
-        .onChange(of: uiState.addToLibraryRequested) { _, requested in
-            guard requested else {
-                return
-            }
-
-            addSelectedAppToLibrary()
-            uiState.addToLibraryRequested = false
+            loadCachedLibraryApps()
         }
         .onDisappear {
             service.stopHourlyCheck()
         }
+        .alert("New Group", isPresented: $showingNewGroupAlert) {
+            TextField("Group Name", text: $newGroupName)
+            Button("Cancel", role: .cancel) { }
+            Button("Create") {
+                let trimmed = newGroupName.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { return }
+                service.createGroup(named: trimmed)
+                let newGroup = service.groups.last
+                // If triggered from selection, add selected apps to the new group
+                if !uiState.selectedAppIDs.isEmpty, let group = newGroup {
+                    for appID in uiState.selectedAppIDs {
+                        service.addApp(appID, toGroup: group.id)
+                    }
+                }
+                if let group = newGroup {
+                    sidebarSelection = .some(.group(group.id))
+                }
+            }
+        }
+        .searchable(text: $searchText, placement: .toolbar)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                SearchField(text: $searchText)
-                    .frame(width: 220)
+                Button {
+                    service.runVersionCheck()
+                } label: {
+                    Label("Check for Updates", systemImage: "arrow.clockwise")
+                }
+                .disabled(service.isChecking)
+                .help("Check for Updates")
+            }
+
+            ToolbarItem(placement: .automatic) {
+                Menu {
+                    Toggle("Current Build", isOn: $showBuildNumberColumn)
+                    Toggle("Previous Version", isOn: $showPreviousVersionColumn)
+                    Toggle("Source", isOn: $showSourceColumn)
+                } label: {
+                    Label("Columns", systemImage: "checklist")
+                }
+                .help("Show or hide optional columns")
+            }
+
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    showAppDetail.toggle()
+                } label: {
+                    Label("App Details", systemImage: "sidebar.right")
+                }
+                .help(showAppDetail ? "Hide App Details" : "Show App Details")
             }
         }
 

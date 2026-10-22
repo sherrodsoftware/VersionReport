@@ -1,639 +1,573 @@
 [
   {
-    "id" : "adobe_acrobat_reader",
-    "name" : "Adobe Acrobat Reader",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/adobe-acrobat-reader.json"
+    "id": "adobe_acrobat_reader",
+    "name": "Adobe Acrobat Reader",
+    "sourceType": "homebrew",
+    "caskName": "adobe-acrobat-reader"
   },
   {
-    "id" : "adobe_creative_cloud",
-    "name" : "Adobe Creative Cloud",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/adobe-creative-cloud.json"
+    "id": "adobe_creative_cloud",
+    "name": "Adobe Creative Cloud",
+    "sourceType": "homebrew",
+    "caskName": "adobe-creative-cloud"
   },
   {
-    "id" : "adobe_photoshop",
-    "name" : "Adobe Photoshop",
-    "parserType" : "regex",
-    "parserValue" : "<h2>[^<]*\\(version [0-9]+(\\.[0-9]+)+\\)<\/h2>",
-    "versionURL" : "https:\/\/helpx.adobe.com\/photoshop\/desktop\/whats-new\/photoshop-on-desktop-release-notes.html"
+    "id": "adobe_photoshop",
+    "name": "Adobe Photoshop",
+    "parserType": "regex",
+    "parserValue": "<h2>[^<]*\\(version [0-9]+(\\.[0-9]+)+\\)</h2>",
+    "versionURL": "https://helpx.adobe.com/photoshop/desktop/whats-new/photoshop-on-desktop-release-notes.html"
   },
   {
-    "id" : "alfred",
-    "name" : "Alfred",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/alfred.json"
+    "id": "alfred",
+    "name": "Alfred",
+    "sourceType": "homebrew",
+    "caskName": "alfred"
   },
   {
-    "id" : "arc",
-    "name" : "Arc",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/arc.json"
+    "id": "arc",
+    "name": "Arc",
+    "sourceType": "homebrew",
+    "caskName": "arc"
   },
   {
-    "id" : "atlassian_sourcetree",
-    "name" : "Atlassian SourceTree",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/sourcetree.json"
+    "id": "atlassian_sourcetree",
+    "name": "Atlassian SourceTree",
+    "sourceType": "homebrew",
+    "caskName": "sourcetree"
   },
   {
-    "id" : "audacity",
-    "name" : "Audacity",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/audacity.json"
+    "id": "audacity",
+    "name": "Audacity",
+    "sourceType": "homebrew",
+    "caskName": "audacity"
   },
   {
-    "id" : "blackmagic_raw_player",
-    "name" : "Blackmagic RAW Player",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/blackmagic-raw-player\/id1435415804?mt=12&platform=mac"
+    "id": "blackmagic_raw_player",
+    "name": "Blackmagic RAW Player",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://apps.apple.com/us/app/blackmagic-raw-player/id1435415804?mt=12&platform=mac"
   },
   {
-    "id" : "browserstacklocal",
-    "name" : "BrowserStackLocal",
-    "parserType" : "jq",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/browserstacklocal.json"
+    "id": "browserstacklocal",
+    "name": "BrowserStackLocal",
+    "sourceType": "homebrew",
+    "caskName": "browserstacklocal"
   },
   {
-    "id" : "catdv_pro",
-    "name" : "CatDV Pro",
-    "parserType" : "regex",
-    "parserValue" : "CatDV Pro [0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/www.quantum.com\/en\/service-support\/downloads-and-firmware\/catdv\/"
+    "id": "catdv_pro",
+    "name": "CatDV Pro",
+    "parserType": "regex",
+    "parserValue": "CatDV Pro [0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://www.quantum.com/en/service-support/downloads-and-firmware/catdv/"
   },
   {
-    "id" : "charles_proxy",
-    "name" : "Charles Proxy",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/charles.json"
+    "id": "charles_proxy",
+    "name": "Charles Proxy",
+    "sourceType": "homebrew",
+    "caskName": "charles"
   },
   {
-    "id" : "chatgpt",
-    "name" : "ChatGPT",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/chatgpt.json"
+    "id": "chatgpt",
+    "name": "ChatGPT",
+    "sourceType": "homebrew",
+    "caskName": "chatgpt"
   },
   {
-    "id" : "chatgpt_classic",
-    "name" : "ChatGPT Classic",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/chatgpt-classic.json"
+    "id": "chatgpt_classic",
+    "name": "ChatGPT Classic",
+    "sourceType": "homebrew",
+    "caskName": "chatgpt-classic"
   },
   {
-    "id" : "claude_desktop",
-    "name" : "Claude Desktop",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/claude.json"
+    "id": "claude_desktop",
+    "name": "Claude Desktop",
+    "sourceType": "homebrew",
+    "caskName": "claude"
   },
   {
-    "id" : "colour_contrast_analyser",
-    "name" : "Colour Contrast Analyser",
-    "parserType" : "jq",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/colour-contrast-analyser.json"
+    "id": "colour_contrast_analyser",
+    "name": "Colour Contrast Analyser",
+    "sourceType": "homebrew",
+    "caskName": "colour-contrast-analyser"
   },
   {
-    "id" : "compressor",
-    "name" : "Compressor",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/compressor-encode-media\/id6746516157?platform=mac"
+    "id": "compressor",
+    "name": "Compressor",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/compressor-encode-media/id6746516157?platform=mac"
   },
   {
-    "id" : "dashboard",
-    "name" : "DashBoard",
-    "parserType" : "regex",
-    "parserValue" : "DashBoard Release Notes v[0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/www.rossvideo.com\/support\/product-documentation\/dashboard\/"
+    "id": "dashboard",
+    "name": "DashBoard",
+    "parserType": "regex",
+    "parserValue": "DashBoard Release Notes v[0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://www.rossvideo.com/support/product-documentation/dashboard/"
   },
   {
-    "id" : "datagrip",
-    "name" : "DataGrip",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/datagrip.json"
+    "id": "datagrip",
+    "name": "DataGrip",
+    "sourceType": "homebrew",
+    "caskName": "datagrip"
   },
   {
-    "id" : "davinci_resolve",
-    "name" : "DaVinci Resolve",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/davinci-resolve\/id571213070?mt=12&platform=mac"
+    "id": "davinci_resolve",
+    "name": "DaVinci Resolve",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://apps.apple.com/us/app/davinci-resolve/id571213070?mt=12&platform=mac"
   },
   {
-    "id" : "davinci_resolve_studio",
-    "name" : "DaVinci Resolve Studio",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/davinci-resolve-studio\/id900392332?mt=12&platform=mac"
+    "id": "davinci_resolve_studio",
+    "name": "DaVinci Resolve Studio",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://apps.apple.com/us/app/davinci-resolve-studio/id900392332?mt=12&platform=mac"
   },
   {
-    "id" : "dbeaver_community_edition",
-    "name" : "DBeaver Community Edition",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/dbeaver-community.json"
+    "id": "dbeaver_community_edition",
+    "name": "DBeaver Community Edition",
+    "sourceType": "homebrew",
+    "caskName": "dbeaver-community"
   },
   {
-    "id" : "docker_desktop",
-    "name" : "Docker Desktop",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/docker-desktop.json"
+    "id": "docker_desktop",
+    "name": "Docker Desktop",
+    "sourceType": "homebrew",
+    "caskName": "docker-desktop"
   },
   {
-    "id" : "dji_studio",
-    "name" : "DJI Studio",
-    "parserType" : "regex",
-    "parserValue" : "\"mac_os\":\\{\"links\":\\[[^\\]]*\\],\"version\":\"v[0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/www.dji.com\/downloads\/softwares\/dji-studio"
+    "id": "dji_studio",
+    "name": "DJI Studio",
+    "parserType": "regex",
+    "parserValue": "\"mac_os\":\\{\"links\":\\[[^\\]]*\\],\"version\":\"v[0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://www.dji.com/downloads/softwares/dji-studio"
   },
   {
-    "id" : "downie",
-    "name" : "Downie",
-    "parserType" : "regex",
-    "parserValue" : "Downie [0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/software.charliemonroe.net\/trial\/downie\/v4\/rnotes.html"
+    "id": "downie",
+    "name": "Downie",
+    "sourceType": "homebrew",
+    "caskName": "downie"
   },
   {
-    "id" : "editready",
-    "name" : "EditReady",
-    "parserType" : "regex",
-    "parserValue" : "EditReady [0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/docs.hedge.video\/editready\/releases"
+    "id": "editready",
+    "name": "EditReady",
+    "parserType": "regex",
+    "parserValue": "EditReady [0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://docs.hedge.video/editready/releases"
   },
   {
-    "id" : "final_cut_pro",
-    "name" : "Final Cut Pro",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/final-cut-pro-create-video\/id1631624924?platform=mac"
+    "id": "final_cut_pro",
+    "name": "Final Cut Pro",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/final-cut-pro-create-video/id1631624924?platform=mac"
   },
   {
-    "id" : "firefox",
-    "name" : "Firefox",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/firefox.json"
+    "id": "firefox",
+    "name": "Firefox",
+    "sourceType": "homebrew",
+    "caskName": "firefox"
   },
   {
-    "id" : "forecast",
-    "name" : "Forecast",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/forecast.json"
+    "id": "forecast",
+    "name": "Forecast",
+    "sourceType": "homebrew",
+    "caskName": "forecast"
   },
   {
-    "id" : "framer",
-    "name" : "Framer",
-    "parserType" : "jq",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/framer.json"
+    "id": "framer",
+    "name": "Framer",
+    "sourceType": "homebrew",
+    "caskName": "framer"
   },
   {
-    "id" : "garageband",
-    "name" : "GarageBand",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/garageband\/id682658836?platform=mac"
+    "id": "garageband",
+    "name": "GarageBand",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/garageband/id682658836?platform=mac"
   },
   {
-    "id" : "gemini",
-    "name" : "Gemini",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/google-gemini.json"
+    "id": "gemini",
+    "name": "Gemini",
+    "sourceType": "homebrew",
+    "caskName": "google-gemini"
   },
   {
-    "id" : "github_desktop",
-    "name" : "GitHub Desktop",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/github.json"
+    "id": "github_desktop",
+    "name": "GitHub Desktop",
+    "sourceType": "homebrew",
+    "caskName": "github"
   },
   {
-    "id" : "google_ads_editor",
-    "name" : "Google Ads Editor",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/google-ads-editor.json"
+    "id": "google_ads_editor",
+    "name": "Google Ads Editor",
+    "sourceType": "homebrew",
+    "caskName": "google-ads-editor"
   },
   {
-    "id" : "google_chrome",
-    "name" : "Google Chrome",
-    "parserType" : "regex",
-    "parserValue" : "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+",
-    "versionURL" : "https:\/\/versionhistory.googleapis.com\/v1\/chrome\/platforms\/mac\/channels\/stable\/versions"
+    "id": "google_chrome",
+    "name": "Google Chrome",
+    "sourceType": "homebrew",
+    "caskName": "google-chrome"
   },
   {
-    "id" : "grammarly_desktop",
-    "name" : "Grammarly Desktop",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/grammarly-desktop.json"
+    "id": "grammarly_desktop",
+    "name": "Grammarly Desktop",
+    "sourceType": "homebrew",
+    "caskName": "grammarly-desktop"
   },
   {
-    "id" : "granola",
-    "name" : "Granola",
-    "parserType" : "jq",
-    "parserValue" : ".production",
-    "versionURL" : "https:\/\/api.granola.ai\/v1\/get-versions"
+    "id": "granola",
+    "name": "Granola",
+    "sourceType": "homebrew",
+    "caskName": "granola"
   },
   {
-    "id" : "handbrake",
-    "name" : "HandBrake",
-    "parserType" : "jq",
-    "parserValue" : ".versions.stable",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/formula\/handbrake.json"
+    "id": "handbrake",
+    "name": "HandBrake",
+    "sourceType": "homebrew",
+    "caskName": "handbrake-app"
   },
   {
-    "id" : "imovie",
-    "name" : "iMovie",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/imovie\/id408981434?platform=mac"
+    "id": "imovie",
+    "name": "iMovie",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/imovie/id408981434?platform=mac"
   },
   {
-    "id" : "insta360_studio",
-    "name" : "Insta360 Studio",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/insta360-studio.json"
+    "id": "insta360_studio",
+    "name": "Insta360 Studio",
+    "sourceType": "homebrew",
+    "caskName": "insta360-studio"
   },
   {
-    "id" : "intellij_idea_ultimate",
-    "name" : "IntelliJ IDEA Ultimate",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/intellij-idea.json"
+    "id": "intellij_idea_ultimate",
+    "name": "IntelliJ IDEA Ultimate",
+    "sourceType": "homebrew",
+    "caskName": "intellij-idea"
   },
   {
-    "id" : "iterm",
-    "name" : "iTerm",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/iterm2.json"
+    "id": "iterm",
+    "name": "iTerm",
+    "sourceType": "homebrew",
+    "caskName": "iterm2"
   },
   {
-    "id" : "jabra_direct",
-    "name" : "Jabra Direct",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/jabra-direct.json"
+    "id": "jabra_direct",
+    "name": "Jabra Direct",
+    "sourceType": "homebrew",
+    "caskName": "jabra-direct"
   },
   {
-    "id" : "keyboard_maestro",
-    "name" : "Keyboard Maestro",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/keyboard-maestro.json"
+    "id": "keyboard_maestro",
+    "name": "Keyboard Maestro",
+    "sourceType": "homebrew",
+    "caskName": "keyboard-maestro"
   },
   {
-    "id" : "keynote",
-    "name" : "Keynote",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/keynote-design-presentations\/id361285480?platform=mac"
+    "id": "keynote",
+    "name": "Keynote",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/keynote-design-presentations/id361285480?platform=mac"
   },
   {
-    "id" : "lastpass_for_desktop",
-    "name" : "LastPass for Desktop",
-    "parserType" : "regex",
-    "parserValue" : "Version [0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/lastpass.com\/misc_download2.php"
+    "id": "lastpass_for_desktop",
+    "name": "LastPass for Desktop",
+    "parserType": "regex",
+    "parserValue": "Version [0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://lastpass.com/misc_download2.php"
   },
   {
-    "id" : "leapp",
-    "name" : "Leapp",
-    "parserType" : "jq",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/leapp.json"
+    "id": "leapp",
+    "name": "Leapp",
+    "sourceType": "homebrew",
+    "caskName": "leapp"
   },
   {
-    "id" : "logic_pro",
-    "name" : "Logic Pro",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/logic-pro-make-music\/id1615087040?platform=mac"
+    "id": "logic_pro",
+    "name": "Logic Pro",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/logic-pro-make-music/id1615087040?platform=mac"
   },
   {
-    "id" : "mainstage",
-    "name" : "MainStage",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/mainstage-perform-live\/id6746637089?platform=mac"
+    "id": "mainstage",
+    "name": "MainStage",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/mainstage-perform-live/id6746637089?platform=mac"
   },
   {
-    "id" : "microsoft_edge",
-    "name" : "Microsoft Edge",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/microsoft-edge.json"
+    "id": "microsoft_edge",
+    "name": "Microsoft Edge",
+    "sourceType": "homebrew",
+    "caskName": "microsoft-edge"
   },
   {
-    "id" : "microsoft_excel",
-    "name" : "Microsoft Excel",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/microsoft-excel.json"
+    "id": "microsoft_excel",
+    "name": "Microsoft Excel",
+    "sourceType": "homebrew",
+    "caskName": "microsoft-excel"
   },
   {
-    "id" : "microsoft_onenote",
-    "name" : "Microsoft OneNote",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/microsoft-onenote.json"
+    "id": "microsoft_onenote",
+    "name": "Microsoft OneNote",
+    "sourceType": "homebrew",
+    "caskName": "microsoft-onenote"
   },
   {
-    "id" : "microsoft_outlook",
-    "name" : "Microsoft Outlook",
-    "parserType" : "regex",
-    "parserValue" : "<key>Update Version<\/key>\\s*<string>[0-9]+(\\.[0-9]+)+<\/string>",
-    "versionURL" : "https:\/\/res.public.onecdn.static.microsoft\/mro1cdnstorage\/C1297A47-86C4-4C1F-97FA-950631F94777\/MacAutoupdate\/0409OPIM2019-chk.xml"
+    "id": "microsoft_outlook",
+    "name": "Microsoft Outlook",
+    "sourceType": "homebrew",
+    "caskName": "microsoft-outlook"
   },
   {
-    "id" : "microsoft_powerpoint",
-    "name" : "Microsoft PowerPoint",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/microsoft-powerpoint.json"
+    "id": "microsoft_powerpoint",
+    "name": "Microsoft PowerPoint",
+    "sourceType": "homebrew",
+    "caskName": "microsoft-powerpoint"
   },
   {
-    "id" : "microsoft_teams",
-    "name" : "Microsoft Teams",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/microsoft-teams.json"
+    "id": "microsoft_teams",
+    "name": "Microsoft Teams",
+    "sourceType": "homebrew",
+    "caskName": "microsoft-teams"
   },
   {
-    "id" : "microsoft_word",
-    "name" : "Microsoft Word",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/microsoft-word.json"
+    "id": "microsoft_word",
+    "name": "Microsoft Word",
+    "sourceType": "homebrew",
+    "caskName": "microsoft-word"
   },
   {
-    "id" : "motion",
-    "name" : "Motion",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/motion-animate-effects\/id6746637149?platform=mac"
+    "id": "motion",
+    "name": "Motion",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/motion-animate-effects/id6746637149?platform=mac"
   },
   {
-    "id" : "netnewswire",
-    "name" : "NetNewsWire",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/netnewswire.json"
+    "id": "netnewswire",
+    "name": "NetNewsWire",
+    "sourceType": "homebrew",
+    "caskName": "netnewswire"
   },
   {
-    "id" : "notion",
-    "name" : "Notion",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/notion.json"
+    "id": "notion",
+    "name": "Notion",
+    "sourceType": "homebrew",
+    "caskName": "notion"
   },
   {
-    "id" : "nucleo",
-    "name" : "Nucleo",
-    "parserType" : "regex",
-    "parserValue" : "Nucleo v[0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/nucleoapp.com\/updates"
+    "id": "nucleo",
+    "name": "Nucleo",
+    "sourceType": "homebrew",
+    "caskName": "nucleo"
   },
   {
-    "id" : "numbers",
-    "name" : "Numbers",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/numbers-make-spreadsheets\/id361304891?platform=mac"
+    "id": "numbers",
+    "name": "Numbers",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/numbers-make-spreadsheets/id361304891?platform=mac"
   },
   {
-    "id" : "obsidian",
-    "name" : "Obsidian",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/obsidian.json"
+    "id": "obsidian",
+    "name": "Obsidian",
+    "sourceType": "homebrew",
+    "caskName": "obsidian"
   },
   {
-    "id" : "okta_verify",
-    "name" : "Okta Verify",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/okta-verify.json"
+    "id": "okta_verify",
+    "name": "Okta Verify",
+    "sourceType": "homebrew",
+    "caskName": "okta-verify"
   },
   {
-    "id" : "onedrive",
-    "name" : "OneDrive",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/onedrive.json"
+    "id": "onedrive",
+    "name": "OneDrive",
+    "sourceType": "homebrew",
+    "caskName": "onedrive"
   },
   {
-    "id" : "pages",
-    "name" : "Pages",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/pages-create-documents\/id361309726?platform=mac"
+    "id": "pages",
+    "name": "Pages",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/pages-create-documents/id361309726?platform=mac"
   },
   {
-    "id" : "pixelmator_pro",
-    "name" : "Pixelmator Pro",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/pixelmator-pro-edit-images\/id6746662575?platform=mac"
+    "id": "pixelmator_pro",
+    "name": "Pixelmator Pro",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/pixelmator-pro-edit-images/id6746662575?platform=mac"
   },
   {
-    "id" : "postman",
-    "name" : "Postman",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/postman.json"
+    "id": "postman",
+    "name": "Postman",
+    "sourceType": "homebrew",
+    "caskName": "postman"
   },
   {
-    "id" : "prezi_video",
-    "name" : "Prezi Video",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/prezi-video.json"
+    "id": "prezi_video",
+    "name": "Prezi Video",
+    "sourceType": "homebrew",
+    "caskName": "prezi-video"
   },
   {
-    "id" : "privileges",
-    "name" : "Privileges",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/privileges.json"
+    "id": "privileges",
+    "name": "Privileges",
+    "sourceType": "homebrew",
+    "caskName": "privileges"
   },
   {
-    "id" : "pro_tools",
-    "name" : "Pro Tools",
-    "parserType" : "regex",
-    "parserValue" : "[0-9]{4}\\.[0-9]+",
-    "versionURL" : "https:\/\/kb.avid.com\/pkb\/articles\/en_US\/Compatibility\/Pro-Tools-Operating-System-Compatibility-Chart"
+    "id": "pro_tools",
+    "name": "Pro Tools",
+    "parserType": "regex",
+    "parserValue": "[0-9]{4}\\.[0-9]+",
+    "versionURL": "https://kb.avid.com/pkb/articles/en_US/Compatibility/Pro-Tools-Operating-System-Compatibility-Chart"
   },
   {
-    "id" : "qfinder_pro",
-    "name" : "Qfinder Pro",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/qfinder-pro.json"
+    "id": "qfinder_pro",
+    "name": "Qfinder Pro",
+    "sourceType": "homebrew",
+    "caskName": "qfinder-pro"
   },
   {
-    "id" : "qlab",
-    "name" : "QLab",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/qlab.json"
+    "id": "qlab",
+    "name": "QLab",
+    "sourceType": "homebrew",
+    "caskName": "qlab"
   },
   {
-    "id" : "rancher_desktop",
-    "name" : "Rancher Desktop",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/rancher.json"
+    "id": "rancher_desktop",
+    "name": "Rancher Desktop",
+    "sourceType": "homebrew",
+    "caskName": "rancher"
   },
   {
-    "id" : "rectangle",
-    "name" : "Rectangle",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/rectangle.json"
+    "id": "rectangle",
+    "name": "Rectangle",
+    "sourceType": "homebrew",
+    "caskName": "rectangle"
   },
   {
-    "id" : "rider",
-    "name" : "Rider",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/rider.json"
+    "id": "rider",
+    "name": "Rider",
+    "sourceType": "homebrew",
+    "caskName": "rider"
   },
   {
-    "id" : "ringcentral_for_teams_desktop_plugin",
-    "name" : "RingCentral for Teams Desktop Plugin",
-    "parserType" : "regex",
-    "parserValue" : "VERSION\\s+(\\d+(?:\\.\\d+)+)",
-    "versionURL" : "https:\/\/support.ringcentral.com\/us\/en\/release-notes\/integrations\/ringcentral-microsoft-teams.html"
+    "id": "ringcentral_for_teams_desktop_plugin",
+    "name": "RingCentral for Teams Desktop Plugin",
+    "versionURL": "https://support.ringcentral.com/us/en/release-notes/integrations/ringcentral-microsoft-teams.html",
+    "parserType": "regex",
+    "parserValue": "VERSION\\s+(\\d+(?:\\.\\d+)+)"
   },
   {
-    "id" : "rstudio_desktop",
-    "name" : "RStudio Desktop",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/rstudio.json"
+    "id": "rstudio_desktop",
+    "name": "RStudio Desktop",
+    "sourceType": "homebrew",
+    "caskName": "rstudio"
   },
   {
-    "id" : "rubymine",
-    "name" : "RubyMine",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/rubymine.json"
+    "id": "rubymine",
+    "name": "RubyMine",
+    "sourceType": "homebrew",
+    "caskName": "rubymine"
   },
   {
-    "id" : "screaming_frog_seo_spider",
-    "name" : "Screaming Frog SEO Spider",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/screaming-frog-seo-spider.json"
+    "id": "screaming_frog_seo_spider",
+    "name": "Screaming Frog SEO Spider",
+    "sourceType": "homebrew",
+    "caskName": "screaming-frog-seo-spider"
   },
   {
-    "id" : "soundq",
-    "name" : "SoundQ",
-    "parserType" : "regex",
-    "parserValue" : "SoundQ_v[0-9]+(\\.[0-9]+)+\\.pkg",
-    "versionURL" : "https:\/\/www.prosoundeffects.com\/soundq"
+    "id": "soundly",
+    "name": "Soundly",
+    "parserType": "regex",
+    "parserValue": "\"MacArm\"[^}]*\"Version\"[^0-9]*[0-9]+(\\.[0-9]+)+",
+    "versionURL": "https://server2-274265463422.us-central1.run.app/?Type=LatestVersion"
   },
   {
-    "id" : "spotify",
-    "name" : "Spotify",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/spotify.json"
+    "id": "soundq",
+    "name": "SoundQ",
+    "parserType": "regex",
+    "parserValue": "SoundQ_v[0-9]+(\\.[0-9]+)+\\.pkg",
+    "versionURL": "https://www.prosoundeffects.com/soundq"
   },
   {
-    "id" : "tableau_desktop",
-    "name" : "Tableau Desktop",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/tableau.json"
+    "id": "spotify",
+    "name": "Spotify",
+    "sourceType": "homebrew",
+    "caskName": "spotify"
   },
   {
-    "id" : "tableau_prep_builder",
-    "name" : "Tableau Prep Builder",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/tableau-prep.json"
+    "id": "tableau_desktop",
+    "name": "Tableau Desktop",
+    "sourceType": "homebrew",
+    "caskName": "tableau"
   },
   {
-    "id" : "textexpander",
-    "name" : "TextExpander",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/textexpander.json"
+    "id": "tableau_prep_builder",
+    "name": "Tableau Prep Builder",
+    "sourceType": "homebrew",
+    "caskName": "tableau-prep"
   },
   {
-    "id" : "tiles_for_zoom",
-    "name" : "Tiles for Zoom",
-    "parserType" : "regex",
-    "parserValue" : "Release [0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/www.liminalet.com\/tiles-downloads"
+    "id": "textexpander",
+    "name": "TextExpander",
+    "sourceType": "homebrew",
+    "caskName": "textexpander"
   },
   {
-    "id" : "transmit",
-    "name" : "Transmit",
-    "parserType" : "jq",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/transmit.json"
+    "id": "tiles_for_zoom",
+    "name": "Tiles for Zoom",
+    "sourceType": "homebrew",
+    "caskName": "tiles"
   },
   {
-    "id" : "visual_studio_code",
-    "name" : "Visual Studio Code",
-    "parserType" : "regex",
-    "parserValue" : "[0-9]+\\.[0-9]+\\.[0-9]+",
-    "versionURL" : "https:\/\/update.code.visualstudio.com\/api\/releases\/stable"
+    "id": "transmit",
+    "name": "Transmit",
+    "sourceType": "homebrew",
+    "caskName": "transmit"
   },
   {
-    "id" : "vivaldi",
-    "name" : "Vivaldi",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/vivaldi.json"
+    "id": "visual_studio_code",
+    "name": "Visual Studio Code",
+    "sourceType": "homebrew",
+    "caskName": "visual-studio-code"
   },
   {
-    "id" : "vlc",
-    "name" : "VLC",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/vlc.json"
+    "id": "vivaldi",
+    "name": "Vivaldi",
+    "sourceType": "homebrew",
+    "caskName": "vivaldi"
   },
   {
-    "id" : "xcode",
-    "name" : "Xcode",
-    "parserType" : "regex",
-    "parserValue" : "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL" : "https:\/\/apps.apple.com\/us\/app\/xcode\/id497799835?platform=mac"
+    "id": "vlc",
+    "name": "VLC",
+    "sourceType": "homebrew",
+    "caskName": "vlc"
   },
   {
-    "id" : "zoom",
-    "name" : "Zoom",
-    "parserType" : "jq_trim_comma",
-    "parserValue" : ".version",
-    "versionURL" : "https:\/\/formulae.brew.sh\/api\/cask\/zoom.json"
+    "id": "xcode",
+    "name": "Xcode",
+    "parserType": "regex",
+    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
+    "versionURL": "https://apps.apple.com/us/app/xcode/id497799835?platform=mac"
   },
   {
-    "id" : "soundly",
-    "name" : "Soundly",
-    "parserType" : "regex",
-    "parserValue" : "\"MacArm\"[^}]*\"Version\"[^0-9]*[0-9]+(\\.[0-9]+)+",
-    "versionURL" : "https:\/\/server2-274265463422.us-central1.run.app\/?Type=LatestVersion"
+    "id": "zoom",
+    "name": "Zoom",
+    "sourceType": "homebrew",
+    "caskName": "zoom"
   }
 ]

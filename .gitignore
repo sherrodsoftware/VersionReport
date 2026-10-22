@@ -4,3 +4,5 @@ DerivedData/
 build/
 *.xcuserstate
 xcuserdata/
+CODE_REVIEW.md
+docs/

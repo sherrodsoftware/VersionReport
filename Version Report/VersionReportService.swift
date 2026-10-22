@@ -4,46 +4,119 @@ import UserNotifications
 import UniformTypeIdentifiers
 import Combine
 
+enum VersionFetchError: Error, LocalizedError {
+    case rateLimited(source: String)
+    case httpError(source: String, statusCode: Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .rateLimited(let source): return "\(source) rate limit reached"
+        case .httpError(let source, let code): return "\(source) returned HTTP \(code)"
+        }
+    }
+}
+
+private final class SparkleXMLParser: NSObject, XMLParserDelegate {
+    var version: String?
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes: [String: String] = [:]) {
+        guard elementName == "enclosure", version == nil else { return }
+        version = attributes["sparkle:shortVersionString"] ?? attributes["sparkle:version"]
+        if version != nil { parser.abortParsing() }
+    }
+}
+
+enum AppSource: Equatable {
+    case homebrew(caskName: String)
+    case sparkle(feedURL: URL)
+    case github(repoPath: String)
+    case custom(versionURL: URL, parserType: String, parserValue: String)
+
+    var displayName: String {
+        switch self {
+        case .homebrew: return "Homebrew Cask"
+        case .sparkle: return "Sparkle Feed"
+        case .github: return "GitHub Releases"
+        case .custom(_, let parserType, _): return "Custom (\(parserType))"
+        }
+    }
+}
+
+extension AppSource: Codable {
+    enum CodingKeys: String, CodingKey {
+        case sourceType, caskName, feedURL, repoPath, versionURL, parserType, parserValue
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let sourceType = try container.decodeIfPresent(String.self, forKey: .sourceType) ?? "custom"
+
+        switch sourceType {
+        case "homebrew":
+            self = .homebrew(caskName: try container.decode(String.self, forKey: .caskName))
+        case "sparkle":
+            self = .sparkle(feedURL: try container.decode(URL.self, forKey: .feedURL))
+        case "github":
+            self = .github(repoPath: try container.decode(String.self, forKey: .repoPath))
+        default:
+            self = .custom(
+                versionURL: try container.decode(URL.self, forKey: .versionURL),
+                parserType: try container.decode(String.self, forKey: .parserType),
+                parserValue: try container.decode(String.self, forKey: .parserValue)
+            )
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .homebrew(let caskName):
+            try container.encode("homebrew", forKey: .sourceType)
+            try container.encode(caskName, forKey: .caskName)
+        case .sparkle(let feedURL):
+            try container.encode("sparkle", forKey: .sourceType)
+            try container.encode(feedURL, forKey: .feedURL)
+        case .github(let repoPath):
+            try container.encode("github", forKey: .sourceType)
+            try container.encode(repoPath, forKey: .repoPath)
+        case .custom(let versionURL, let parserType, let parserValue):
+            try container.encode(versionURL, forKey: .versionURL)
+            try container.encode(parserType, forKey: .parserType)
+            try container.encode(parserValue, forKey: .parserValue)
+        }
+    }
+}
+
 struct AppConfig: Codable, Identifiable, Equatable {
     enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case versionURL
-        case parserType
-        case parserValue
+        case id, name
     }
 
     var id: String
     let name: String
-    let versionURL: URL
-    let parserType: String
-    let parserValue: String
+    let source: AppSource
 
-    init(
-        id: String? = nil,
-        name: String,
-        versionURL: URL,
-        parserType: String,
-        parserValue: String
-    ) {
+    init(id: String? = nil, name: String, source: AppSource) {
         self.id = id ?? Self.defaultID(for: name)
         self.name = name
-        self.versionURL = versionURL
-        self.parserType = parserType
-        self.parserValue = parserValue
+        self.source = source
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let name = try container.decode(String.self, forKey: .name)
-
         self.init(
             id: try container.decodeIfPresent(String.self, forKey: .id),
             name: name,
-            versionURL: try container.decode(URL.self, forKey: .versionURL),
-            parserType: try container.decode(String.self, forKey: .parserType),
-            parserValue: try container.decode(String.self, forKey: .parserValue)
+            source: try AppSource(from: decoder)
         )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try source.encode(to: encoder)
     }
 
     static func defaultID(for name: String) -> String {
@@ -52,13 +125,36 @@ struct AppConfig: Codable, Identifiable, Equatable {
     }
 }
 
+struct LibraryConflict: Codable, Identifiable {
+    let bundledConfig: AppConfig
+    let userConfig: AppConfig
+    var id: String { bundledConfig.id }
+}
+
 struct AppState: Codable {
     var version: String
     var previousVersion: String?
-    var parserType: String
     var lastChecked: String
-    var lastUpdated: String
-    var hasUnreadUpdate: Bool? = nil
+    var lastUpdated: String?
+    var hasUnreadUpdate: Bool
+
+    init(version: String, previousVersion: String?, lastChecked: String, lastUpdated: String?, hasUnreadUpdate: Bool) {
+        self.version = version
+        self.previousVersion = previousVersion
+        self.lastChecked = lastChecked
+        self.lastUpdated = lastUpdated
+        self.hasUnreadUpdate = hasUnreadUpdate
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(String.self, forKey: .version)
+        previousVersion = try container.decodeIfPresent(String.self, forKey: .previousVersion)
+        lastChecked = try container.decode(String.self, forKey: .lastChecked)
+        let rawLastUpdated = try container.decodeIfPresent(String.self, forKey: .lastUpdated)
+        lastUpdated = rawLastUpdated == "Never" ? nil : rawLastUpdated
+        hasUnreadUpdate = try container.decodeIfPresent(Bool.self, forKey: .hasUnreadUpdate) ?? false
+    }
 }
 
 final class VersionReportService: ObservableObject {
@@ -70,6 +166,8 @@ final class VersionReportService: ObservableObject {
     }
     @Published var isChecking = false
     @Published var statusMessage = "Ready"
+    @Published var pendingLibraryConflicts: [LibraryConflict] = []
+    @Published var groups: [AppGroup] = []
 
     private var hourlyTimer: Timer?
     private var dockBadgeRefreshObserver: NSObjectProtocol?
@@ -112,14 +210,106 @@ final class VersionReportService: ObservableObject {
         baseURL.appendingPathComponent("app-library.json")
     }
 
+    private var groupsURL: URL {
+        baseURL.appendingPathComponent("groups.json")
+    }
+
+    private func loadGroups() -> [AppGroup] {
+        guard let data = try? Data(contentsOf: groupsURL),
+              let loaded = try? JSONDecoder().decode([AppGroup].self, from: data) else {
+            return []
+        }
+        return loaded
+    }
+
+    private func saveGroups(_ groups: [AppGroup]) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? encoder.encode(groups) else { return }
+        try? data.write(to: groupsURL)
+    }
+
+    func createGroup(named name: String) {
+        var updated = groups
+        updated.append(AppGroup(name: name))
+        saveGroups(updated)
+        groups = updated
+    }
+
+    func deleteGroup(id: String) {
+        var updated = groups.filter { $0.id != id }
+        saveGroups(updated)
+        groups = updated
+    }
+
+    func renameGroup(id: String, to newName: String) {
+        var updated = groups
+        guard let idx = updated.firstIndex(where: { $0.id == id }) else { return }
+        updated[idx].name = newName
+        saveGroups(updated)
+        groups = updated
+    }
+
+    func addApp(_ appID: String, toGroup groupID: String) {
+        var updated = groups
+        guard let idx = updated.firstIndex(where: { $0.id == groupID }) else { return }
+        guard !updated[idx].appIDs.contains(appID) else { return }
+        updated[idx].appIDs.append(appID)
+        saveGroups(updated)
+        groups = updated
+    }
+
+    func moveGroups(from source: IndexSet, to destination: Int) {
+        var updated = groups
+        let items = source.sorted().map { updated[$0] }
+        for index in source.sorted().reversed() { updated.remove(at: index) }
+        let adjustedDest = destination - source.filter { $0 < destination }.count
+        updated.insert(contentsOf: items, at: max(0, min(adjustedDest, updated.count)))
+        saveGroups(updated)
+        groups = updated
+    }
+
+    func removeApp(_ appID: String, fromGroup groupID: String) {
+        var updated = groups
+        guard let idx = updated.firstIndex(where: { $0.id == groupID }) else { return }
+        updated[idx].appIDs.removeAll { $0 == appID }
+        saveGroups(updated)
+        groups = updated
+    }
+
+    private func loadPersistedConflicts() -> [LibraryConflict] {
+        guard let data = UserDefaults.standard.data(forKey: "pendingLibraryConflicts") else { return [] }
+        return (try? JSONDecoder().decode([LibraryConflict].self, from: data)) ?? []
+    }
+
+    private func savePersistedConflicts(_ conflicts: [LibraryConflict]) {
+        if let data = try? JSONEncoder().encode(conflicts) {
+            UserDefaults.standard.set(data, forKey: "pendingLibraryConflicts")
+        }
+    }
+
 
     func loadApps() {
         initializeApplicationSupportIfNeeded()
+        pendingLibraryConflicts = loadPersistedConflicts()
+        groups = loadGroups()
         reloadApps()
+        runVersionCheck()
+    }
 
-        if shouldPerformAutomaticCheck() {
-            runVersionCheck()
+    func resolveLibraryConflict(_ conflict: LibraryConflict, useBuiltin: Bool) {
+        if useBuiltin {
+            var monitoredConfigs = loadAppConfigs()
+            if let idx = monitoredConfigs.firstIndex(where: { $0.id == conflict.userConfig.id }) {
+                monitoredConfigs[idx] = conflict.bundledConfig
+                saveAppConfigs(monitoredConfigs)
+                reloadApps()
+            }
         }
+        // Regardless of choice, remove from pending list
+        var remaining = loadPersistedConflicts().filter { $0.id != conflict.id }
+        savePersistedConflicts(remaining)
+        pendingLibraryConflicts = remaining
     }
 
     func loadAppConfigs() -> [AppConfig] {
@@ -251,26 +441,14 @@ final class VersionReportService: ObservableObject {
         var didChangeLibrary = false
 
         for bundledConfig in bundledConfigs {
-            if let existingIndex = userLibraryConfigs.firstIndex(where: { $0.id == bundledConfig.id }) {
-                let existingConfig = userLibraryConfigs[existingIndex]
-
-                if existingConfig.name != bundledConfig.name ||
-                   existingConfig.versionURL != bundledConfig.versionURL ||
-                   existingConfig.parserType != bundledConfig.parserType ||
-                   existingConfig.parserValue != bundledConfig.parserValue {
-                    userLibraryConfigs[existingIndex] = bundledConfig
-                    didChangeLibrary = true
-                }
-            } else {
+            if !userLibraryConfigs.contains(where: { $0.id == bundledConfig.id }) {
+                // New entry: add it; never overwrite an entry the user already has.
                 userLibraryConfigs.append(bundledConfig)
                 didChangeLibrary = true
             }
         }
 
-        guard didChangeLibrary else {
-            return
-        }
-
+        guard didChangeLibrary else { return }
         saveAppLibrary(userLibraryConfigs)
     }
 
@@ -282,28 +460,36 @@ final class VersionReportService: ObservableObject {
             return
         }
 
-        var monitoredConfigs = loadAppConfigs()
-        var didChangeConfigs = false
+        let monitoredConfigs = loadAppConfigs()
+        var knownConflictIDs = Set(loadPersistedConflicts().map { $0.id })
+        var newConflicts: [LibraryConflict] = []
 
         for bundledConfig in bundledConfigs {
-            if let existingIndex = monitoredConfigs.firstIndex(where: { $0.id == bundledConfig.id }) {
-                let existingConfig = monitoredConfigs[existingIndex]
+            // If already monitored under the same ID, the user's config wins — don't touch it.
+            if monitoredConfigs.contains(where: { $0.id == bundledConfig.id }) { continue }
 
-                if existingConfig.name != bundledConfig.name ||
-                   existingConfig.versionURL != bundledConfig.versionURL ||
-                   existingConfig.parserType != bundledConfig.parserType ||
-                   existingConfig.parserValue != bundledConfig.parserValue {
-                    monitoredConfigs[existingIndex] = bundledConfig
-                    didChangeConfigs = true
+            // If monitored under a different ID but the same name, the user added it before
+            // it became a built-in entry. Record a conflict so we can offer to swap.
+            if let userConfig = monitoredConfigs.first(where: {
+                $0.name.localizedCaseInsensitiveCompare(bundledConfig.name) == .orderedSame &&
+                $0.id != bundledConfig.id &&
+                $0.source != bundledConfig.source
+            }) {
+                if !knownConflictIDs.contains(bundledConfig.id) {
+                    newConflicts.append(LibraryConflict(bundledConfig: bundledConfig, userConfig: userConfig))
+                    knownConflictIDs.insert(bundledConfig.id)
                 }
             }
         }
 
-        guard didChangeConfigs else {
-            return
+        if !newConflicts.isEmpty {
+            var all = loadPersistedConflicts() + newConflicts
+            // Deduplicate by bundled config ID
+            var seen = Set<String>()
+            all = all.filter { seen.insert($0.id).inserted }
+            savePersistedConflicts(all)
+            pendingLibraryConflicts = all
         }
-
-        saveAppConfigs(monitoredConfigs)
     }
 
     func initializeIconsIfNeeded() {
@@ -398,12 +584,7 @@ final class VersionReportService: ObservableObject {
 
                     await MainActor.run {
                         self.apps = updatedApps
-
-                        let formatter = DateFormatter()
-                        formatter.timeStyle = .short
-                        formatter.dateStyle = .none
-
-                        self.statusMessage = "Added \(config.name) at \(formatter.string(from: Date()))"
+                        self.statusMessage = "Added \(config.name) at \(Self.displayTimeFormatter.string(from: Date()))"
                     }
                 }
 
@@ -429,9 +610,7 @@ final class VersionReportService: ObservableObject {
         let updatedConfig = AppConfig(
             id: existingConfig.id,
             name: config.name,
-            versionURL: config.versionURL,
-            parserType: config.parserType,
-            parserValue: config.parserValue
+            source: config.source
         )
 
         configs[index] = updatedConfig
@@ -452,46 +631,166 @@ final class VersionReportService: ObservableObject {
         reloadApps()
     }
 
-    func parserTypes() -> [String] {
+    func customParserTypes() -> [String] {
         ["jq", "jq_trim_comma", "regex", "highest_version"]
     }
 
     func fetchCurrentVersion(for config: AppConfig) async throws -> String? {
-        let (data, _) = try await URLSession.shared.data(from: config.versionURL)
+        switch config.source {
+        case .homebrew(let caskName):
+            return try await lookupHomebrewCask(caskName)?.version
 
-        switch config.parserType {
-        case "jq":
-            return parseJSONValue(from: data, keyPath: config.parserValue)
+        case .sparkle(let feedURL):
+            return try await lookupSparkleFeed(feedURL)?.version
 
-        case "jq_trim_comma":
-            return parseJSONValue(from: data, keyPath: config.parserValue)?
-                .split(separator: ",", maxSplits: 1)
-                .first
-                .map(String.init)
+        case .github(let repoPath):
+            return try await lookupGitHubRelease(repoPath)?.version
 
-        case "regex":
-            guard let responseText = String(data: data, encoding: .utf8) else {
+        case .custom(let versionURL, let parserType, let parserValue):
+            let (data, _) = try await URLSession.shared.data(from: versionURL)
+
+            switch parserType {
+            case "jq":
+                return parseJSONValue(from: data, keyPath: parserValue)
+
+            case "jq_trim_comma":
+                return parseJSONValue(from: data, keyPath: parserValue)?
+                    .split(separator: ",", maxSplits: 1)
+                    .first
+                    .map(String.init)
+
+            case "regex":
+                guard let responseText = String(data: data, encoding: .utf8) else { return nil }
+                return firstRegexVersionMatch(in: responseText, pattern: parserValue)
+
+            case "highest_version":
+                guard let responseText = String(data: data, encoding: .utf8) else { return nil }
+                return highestRegexVersionMatch(in: responseText, pattern: parserValue)
+
+            default:
                 return nil
             }
+        }
+    }
 
-            return firstRegexVersionMatch(
-                in: responseText,
-                pattern: config.parserValue
-            )
+    struct HomebrewCaskInfo {
+        let name: String
+        let version: String
+    }
 
-        case "highest_version":
-            guard let responseText = String(data: data, encoding: .utf8) else {
-                return nil
-            }
+    func lookupHomebrewCask(_ caskName: String) async throws -> HomebrewCaskInfo? {
+        let trimmed = caskName.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            return highestRegexVersionMatch(
-                in: responseText,
-                pattern: config.parserValue
-            )
-
-        default:
+        guard !trimmed.isEmpty,
+              let url = URL(string: "https://formulae.brew.sh/api/cask/\(trimmed).json") else {
             return nil
         }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            return nil
+        }
+
+        struct CaskResponse: Decodable {
+            let name: [String]
+            let version: String
+        }
+
+        guard let cask = try? JSONDecoder().decode(CaskResponse.self, from: data),
+              let displayName = cask.name.first else {
+            return nil
+        }
+
+        return HomebrewCaskInfo(name: displayName, version: cask.version)
+    }
+
+    struct SparkleInfo {
+        let version: String
+    }
+
+    func lookupSparkleFeed(_ feedURL: URL) async throws -> SparkleInfo? {
+        let (data, response) = try await URLSession.shared.data(from: feedURL)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            return nil
+        }
+
+        let parser = SparkleXMLParser()
+        let xmlParser = XMLParser(data: data)
+        xmlParser.delegate = parser
+        xmlParser.parse()
+
+        guard let version = parser.version else { return nil }
+        return SparkleInfo(version: version)
+    }
+
+    struct GitHubReleaseInfo {
+        let repoName: String
+        let version: String
+        let tagName: String
+    }
+
+    func lookupGitHubRelease(_ repoPath: String) async throws -> GitHubReleaseInfo? {
+        let normalized = Self.normalizeGitHubRepoPath(repoPath)
+        guard !normalized.isEmpty,
+              let url = URL(string: "https://api.github.com/repos/\(normalized)/releases/latest") else {
+            return nil
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else { return nil }
+
+        if httpResponse.statusCode == 403 || httpResponse.statusCode == 429 {
+            let remaining = httpResponse.value(forHTTPHeaderField: "X-RateLimit-Remaining")
+            if remaining == "0" || httpResponse.statusCode == 429 {
+                throw VersionFetchError.rateLimited(source: "GitHub")
+            }
+        }
+
+        guard httpResponse.statusCode == 200 else { return nil }
+
+        struct ReleaseResponse: Decodable {
+            let tagName: String
+            let name: String?
+            enum CodingKeys: String, CodingKey {
+                case tagName = "tag_name"
+                case name
+            }
+        }
+
+        guard let release = try? JSONDecoder().decode(ReleaseResponse.self, from: data) else {
+            return nil
+        }
+
+        let repoName = normalized.components(separatedBy: "/").last ?? normalized
+        let version = release.tagName.hasPrefix("v") ? String(release.tagName.dropFirst()) : release.tagName
+
+        return GitHubReleaseInfo(repoName: repoName, version: version, tagName: release.tagName)
+    }
+
+    static func normalizeGitHubRepoPath(_ input: String) -> String {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Accept "owner/repo" directly
+        if trimmed.range(of: #"^[^/]+/[^/]+$"#, options: .regularExpression) != nil {
+            return trimmed
+        }
+        // Parse from a github.com URL
+        guard let url = URL(string: trimmed),
+              let host = url.host,
+              host.hasSuffix("github.com") else {
+            return ""
+        }
+        let parts = url.pathComponents.filter { $0 != "/" }
+        guard parts.count >= 2 else { return "" }
+        return "\(parts[0])/\(parts[1])"
     }
 
     func runVersionCheck() {
@@ -507,12 +806,25 @@ final class VersionReportService: ObservableObject {
 
         Task {
             var detectedUpdates: [(appName: String, previousVersion: String, currentVersion: String)] = []
+            var fetchErrors: [String] = []
 
-            for config in configs {
+            await withTaskGroup(of: (AppConfig, String?, Error?).self) { group in
+                for config in configs {
+                    group.addTask {
+                        do {
+                            let version = try await self.fetchCurrentVersion(for: config)
+                            return (config, version, nil)
+                        } catch {
+                            return (config, nil, error)
+                        }
+                    }
+                }
 
-                do {
-
-                    if let version = try await fetchCurrentVersion(for: config) {
+                for await (config, version, error) in group {
+                    if let error {
+                        print("Check failed for \(config.name): \(error)")
+                        fetchErrors.append("\(config.name): \(error.localizedDescription)")
+                    } else if let version {
                         let result = updateAppState(version: version, for: config)
 
                         if result.didUpdate {
@@ -531,13 +843,7 @@ final class VersionReportService: ObservableObject {
                             )
                         }
                     }
-
-                } catch {
-
-                    print("Check failed for \(config.name): \(error)")
-
                 }
-
             }
 
             if !detectedUpdates.isEmpty {
@@ -545,16 +851,19 @@ final class VersionReportService: ObservableObject {
             }
 
             let updatedApps = loadMonitoredApps()
+            let completionTime = Self.displayTimeFormatter.string(from: Date())
 
             await MainActor.run {
                 self.apps = updatedApps
                 self.isChecking = false
-
-                let formatter = DateFormatter()
-                formatter.timeStyle = .short
-                formatter.dateStyle = .none
-
-                self.statusMessage = "Check completed at \(formatter.string(from: Date()))"
+                if fetchErrors.isEmpty {
+                    self.statusMessage = "Check completed at \(completionTime)"
+                } else {
+                    let summary = fetchErrors.count == 1
+                        ? fetchErrors[0]
+                        : "\(fetchErrors.count) apps failed (\(fetchErrors.joined(separator: "; ")))"
+                    self.statusMessage = "Check completed at \(completionTime) — \(summary)"
+                }
             }
 
         }
@@ -687,24 +996,22 @@ final class VersionReportService: ObservableObject {
         let previousVersion = existingState?.version ?? "Unknown"
         let didUpdate = previousVersion != "Unknown" && previousVersion != version
 
-        let formatter = ISO8601DateFormatter()
-        let now = formatter.string(from: Date())
+        let now = Self.iso8601Writer.string(from: Date())
 
-        let lastUpdated: String
+        let lastUpdated: String?
         let hasUnreadUpdate: Bool
 
         if didUpdate {
             lastUpdated = now
             hasUnreadUpdate = true
         } else {
-            lastUpdated = existingState?.lastUpdated ?? "Never"
+            lastUpdated = existingState?.lastUpdated
             hasUnreadUpdate = existingState?.hasUnreadUpdate ?? false
         }
 
         appState[config.id] = AppState(
             version: version,
             previousVersion: didUpdate ? previousVersion : existingState?.previousVersion,
-            parserType: config.parserType,
             lastChecked: now,
             lastUpdated: lastUpdated,
             hasUnreadUpdate: hasUnreadUpdate
@@ -823,10 +1130,27 @@ final class VersionReportService: ObservableObject {
         return false
     }
 
+    private static let iso8601Parser = ISO8601DateFormatter()
+
+    static let displayTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .none
+        f.timeStyle = .short
+        return f
+    }()
+
+    private static let iso8601Writer = ISO8601DateFormatter()
+    private static let legacyMigrationKey = "versionReport.legacyStateMigrationDone"
+
     func loadMonitoredApps() -> [MonitoredApp] {
 
         let configs = loadAppConfigs()
-        migrateAppState(for: configs)
+
+        if !UserDefaults.standard.bool(forKey: Self.legacyMigrationKey) {
+            migrateAppState(for: configs)
+            UserDefaults.standard.set(true, forKey: Self.legacyMigrationKey)
+        }
+
         let appState = loadAppState()
 
         var loadedApps: [MonitoredApp] = []
@@ -841,9 +1165,9 @@ final class VersionReportService: ObservableObject {
                     name: config.name,
                     version: state?.version ?? "Unknown",
                     previousVersion: state?.previousVersion ?? "Unknown",
-                    sourceType: state?.parserType ?? config.parserType,
-                    lastChecked: formatDisplayDate(state?.lastChecked ?? "Never"),
-                    lastUpdated: formatDisplayDate(state?.lastUpdated ?? "Never"),
+                    sourceType: config.source.displayName,
+                    lastChecked: state.flatMap { Self.iso8601Parser.date(from: $0.lastChecked) },
+                    lastUpdated: state.flatMap { $0.lastUpdated.flatMap { Self.iso8601Parser.date(from: $0) } },
                     iconName: config.id,
                     hasUnreadUpdate: state?.hasUnreadUpdate ?? false
                 )
@@ -857,30 +1181,10 @@ final class VersionReportService: ObservableObject {
 
     }
 
-
-    func formatDisplayDate(_ value: String) -> String {
-
-        guard value != "Never" else {
-            return value
-        }
-
-        let parser = ISO8601DateFormatter()
-
-        guard let date = parser.date(from: value) else {
-            return value
-        }
-
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-
-        return formatter.string(from: date)
-    }
-
-    func icon(for app: MonitoredApp) -> NSImage {
+    func icon(forID id: String) -> NSImage {
         let iconPath = baseURL
             .appendingPathComponent("icons")
-            .appendingPathComponent("\(app.iconName).png")
+            .appendingPathComponent("\(id).png")
             .path
 
         if let icon = NSImage(contentsOfFile: iconPath) {
@@ -889,6 +1193,10 @@ final class VersionReportService: ObservableObject {
         }
 
         return NSWorkspace.shared.icon(for: UTType.application)
+    }
+
+    func icon(for app: MonitoredApp) -> NSImage {
+        icon(forID: app.iconName)
     }
 
 
@@ -1007,21 +1315,6 @@ final class VersionReportService: ObservableObject {
         }
     }
 
-    func shouldPerformAutomaticCheck() -> Bool {
-        let appState = loadAppState()
-        let parser = ISO8601DateFormatter()
-
-        let mostRecentCheck = appState.values
-            .compactMap { parser.date(from: $0.lastChecked) }
-            .max()
-
-        guard let mostRecentCheck else {
-            return true
-        }
-
-        return Date().timeIntervalSince(mostRecentCheck) > 90 * 60
-    }
-
     func scheduleNextHourlyCheck() {
 
         hourlyTimer?.invalidate()
@@ -1039,9 +1332,9 @@ final class VersionReportService: ObservableObject {
 
         let interval = nextHour.timeIntervalSince(now)
 
-        hourlyTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { _ in
-            self.runVersionCheck()
-            self.scheduleNextHourlyCheck()
+        hourlyTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            self?.runVersionCheck()
+            self?.scheduleNextHourlyCheck()
         }
 
     }

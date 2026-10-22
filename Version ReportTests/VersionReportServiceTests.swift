@@ -157,9 +157,11 @@ final class VersionReportServiceTests: XCTestCase {
         AppConfig(
             id: id,
             name: name,
-            versionURL: URL(string: "https://example.com/releases")!,
-            parserType: "jq",
-            parserValue: parserValue
+            source: .custom(
+                versionURL: URL(string: "https://example.com/releases")!,
+                parserType: "jq",
+                parserValue: parserValue
+            )
         )
     }
 
@@ -167,9 +169,8 @@ final class VersionReportServiceTests: XCTestCase {
         AppState(
             version: version,
             previousVersion: nil,
-            parserType: "jq",
             lastChecked: ISO8601DateFormatter().string(from: Date()),
-            lastUpdated: "Never",
+            lastUpdated: nil,
             hasUnreadUpdate: hasUnreadUpdate
         )
     }
