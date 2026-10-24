@@ -6,6 +6,8 @@ struct SidebarView: View {
     @ObservedObject var service: VersionReportService
     @Binding var selection: SidebarSelection?
 
+    @Binding var showingSmartGroupSheet: Bool
+    @Binding var editingSmartGroup: SmartGroup?
     @State private var renamingGroupID: String?
     @State private var renameText = ""
     @State private var dropTargetGroupID: String?
@@ -30,6 +32,17 @@ struct SidebarView: View {
                 }
                 .onMove { from, to in
                     service.moveGroups(from: from, to: to)
+                }
+            }
+
+            if !service.smartGroups.isEmpty {
+                Section("Smart Groups") {
+                    ForEach(service.smartGroups) { sg in
+                        smartGroupRow(sg)
+                    }
+                    .onMove { from, to in
+                        service.moveSmartGroups(from: from, to: to)
+                    }
                 }
             }
         }
@@ -110,6 +123,41 @@ struct SidebarView: View {
                 }
                 return true
             }
+    }
+
+    private func smartGroupRow(_ sg: SmartGroup) -> some View {
+        let count = service.apps.filter { sg.evaluate($0) }.count
+        let unread = service.apps.filter { sg.evaluate($0) && $0.hasUnreadUpdate }.count
+        return Label(sg.name, systemImage: "gearshape.2")
+            .badge(unread)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture { selection = .smartGroup(sg.id) }
+            .listRowBackground(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(selectionIsSmartGroup(sg.id) ? Color.accentColor.opacity(0.18) : Color.clear)
+                    .padding(.horizontal, 4)
+            )
+            .contextMenu {
+                Text("\(count) app\(count == 1 ? "" : "s") match\(count == 1 ? "es" : "")")
+                Divider()
+                Button("Edit Smart Group…") {
+                    editingSmartGroup = sg
+                    showingSmartGroupSheet = true
+                }
+                Divider()
+                Button("Delete Smart Group", role: .destructive) {
+                    if case .smartGroup(let id) = selection, id == sg.id {
+                        selection = .allApps
+                    }
+                    service.deleteSmartGroup(id: sg.id)
+                }
+            }
+    }
+
+    private func selectionIsSmartGroup(_ id: String) -> Bool {
+        if case .smartGroup(let sid) = selection { return sid == id }
+        return false
     }
 
     private func selectionOrDropColor(for groupID: String, isDropTarget: Bool) -> Color {

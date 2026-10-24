@@ -110,6 +110,16 @@ struct AppDetailView: View {
                     detailRow("Source", value: app.sourceType)
                     detailRow("Last Checked", value: formatDate(app.lastChecked))
                     detailRow("Last Updated", value: formatDate(app.lastUpdated))
+
+                    if let url = app.latestReleaseURL {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("Download")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 130, alignment: .trailing)
+                            Link("Get Latest Release", destination: url)
+                                .font(.body)
+                        }
+                    }
                 }
 
                 Spacer()

@@ -1,12 +1,21 @@
 import SwiftUI
 
+private struct AppStoreResult: Identifiable {
+    let id: Int
+    let name: String
+    let developer: String
+    let iconURL: URL?
+    let storeURL: URL
+    let version: String
+}
+
 struct AddEditAppSheet: View {
 
     let service: VersionReportService
     let uiState: AppUIState
 
     @State private var appName = ""
-    @State private var sourceType = "homebrew"
+    @State private var sourceType = "appstore"
     @State private var caskName = ""
     @State private var sparkleURL = ""
     @State private var gitHubRepo = ""
@@ -18,6 +27,13 @@ struct AddEditAppSheet: View {
     @State private var parserTestResult = ""
     @State private var isTestingParser = false
 
+    // App Store search state
+    @State private var appStoreQuery = ""
+    @State private var appStoreResults: [AppStoreResult] = []
+    @State private var isSearchingAppStore = false
+    @State private var selectedAppStoreResult: AppStoreResult?
+    @State private var appStoreSearchMessage = ""
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
 
@@ -27,6 +43,7 @@ struct AddEditAppSheet: View {
             TextField("App Name", text: $appName)
 
             Picker("Source", selection: $sourceType) {
+                Text("App Store").tag("appstore")
                 Text("Homebrew Cask").tag("homebrew")
                 Text("Sparkle Feed").tag("sparkle")
                 Text("GitHub Releases").tag("github")
@@ -165,6 +182,10 @@ struct AddEditAppSheet: View {
                     Text(lookupResult).font(.footnote).foregroundStyle(.secondary)
                 }
 
+            } else if sourceType == "appstore" {
+
+                appStoreSearchSection
+
             } else {
 
                 TextField("Version URL", text: $versionURL)
@@ -240,11 +261,126 @@ struct AddEditAppSheet: View {
         }
     }
 
+    @ViewBuilder
+    private var appStoreSearchSection: some View {
+        HStack {
+            TextField("Search App Store", text: $appStoreQuery)
+                .onSubmit { performAppStoreSearch() }
+
+            Button(isSearchingAppStore ? "Searching…" : "Search") {
+                performAppStoreSearch()
+            }
+            .disabled(appStoreQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearchingAppStore)
+        }
+
+        if !appStoreSearchMessage.isEmpty {
+            Text(appStoreSearchMessage).font(.footnote).foregroundStyle(.secondary)
+        }
+
+        if !appStoreResults.isEmpty {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(appStoreResults) { result in
+                        AppStoreResultRow(
+                            result: result,
+                            isSelected: selectedAppStoreResult?.id == result.id
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedAppStoreResult = result
+                            appName = result.name
+                        }
+                        Divider().padding(.leading, 44)
+                    }
+                }
+            }
+            .frame(maxHeight: 220)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            )
+        }
+
+        if let selected = selectedAppStoreResult {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text("Selected: \(selected.name) \(selected.version)")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func performAppStoreSearch() {
+        let query = appStoreQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return }
+
+        isSearchingAppStore = true
+        appStoreSearchMessage = ""
+        appStoreResults = []
+
+        Task {
+            do {
+                let results = try await searchAppStore(query: query)
+                await MainActor.run {
+                    appStoreResults = results
+                    appStoreSearchMessage = results.isEmpty ? "No results found" : ""
+                    isSearchingAppStore = false
+                }
+            } catch {
+                await MainActor.run {
+                    appStoreSearchMessage = "Search failed: \(error.localizedDescription)"
+                    isSearchingAppStore = false
+                }
+            }
+        }
+    }
+
+    private func searchAppStore(query: String) async throws -> [AppStoreResult] {
+        var components = URLComponents(string: "https://itunes.apple.com/search")!
+        components.queryItems = [
+            URLQueryItem(name: "term", value: query),
+            URLQueryItem(name: "entity", value: "macSoftware"),
+            URLQueryItem(name: "limit", value: "20")
+        ]
+        guard let url = components.url else { return [] }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let results = json?["results"] as? [[String: Any]] ?? []
+
+        return results.compactMap { item -> AppStoreResult? in
+            guard
+                let trackId = item["trackId"] as? Int,
+                let name = item["trackName"] as? String,
+                let developer = item["artistName"] as? String,
+                let storeURLString = item["trackViewUrl"] as? String,
+                let storeURL = URL(string: storeURLString)
+            else { return nil }
+
+            let iconURL = (item["artworkUrl60"] as? String).flatMap(URL.init)
+            let version = item["version"] as? String ?? ""
+
+            return AppStoreResult(
+                id: trackId,
+                name: name,
+                developer: developer,
+                iconURL: iconURL,
+                storeURL: storeURL,
+                version: version
+            )
+        }
+    }
+
     private var isSaveDisabled: Bool {
         if appName.isEmpty { return true }
         if sourceType == "homebrew" { return caskName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         if sourceType == "sparkle" { return sparkleURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         if sourceType == "github" { return VersionReportService.normalizeGitHubRepoPath(gitHubRepo).isEmpty }
+        if sourceType == "appstore" { return selectedAppStoreResult == nil }
         return versionURL.isEmpty || parserValue.isEmpty
     }
 
@@ -252,7 +388,7 @@ struct AddEditAppSheet: View {
         guard let editingID = uiState.editingOriginalAppID,
               let config = service.loadAppConfigs().first(where: { $0.id == editingID }) else {
             appName = ""
-            sourceType = "homebrew"
+            sourceType = "appstore"
             caskName = ""
             sparkleURL = ""
             gitHubRepo = ""
@@ -292,6 +428,23 @@ struct AddEditAppSheet: View {
             versionURL = ""
             parserType = "jq"
             parserValue = ""
+        case .appstore(let url, let pType, let pValue):
+            sourceType = "appstore"
+            caskName = ""
+            sparkleURL = ""
+            gitHubRepo = ""
+            versionURL = url.absoluteString
+            parserType = pType
+            parserValue = pValue
+            // Show the existing URL as a placeholder result so Save stays enabled
+            selectedAppStoreResult = AppStoreResult(
+                id: 0,
+                name: config.name,
+                developer: "",
+                iconURL: nil,
+                storeURL: url,
+                version: ""
+            )
         case .custom(let url, let pType, let pValue):
             sourceType = "custom"
             caskName = ""
@@ -319,12 +472,35 @@ struct AddEditAppSheet: View {
             let path = VersionReportService.normalizeGitHubRepoPath(gitHubRepo)
             guard !path.isEmpty else { return }
             source = .github(repoPath: path)
+        } else if sourceType == "appstore" {
+            guard let result = selectedAppStoreResult else { return }
+            if result.id == 0 {
+                // Editing without re-searching — preserve the existing source URL
+                guard let existingURL = URL(string: versionURL) else { return }
+                source = .appstore(pageURL: existingURL, parserType: parserType, parserValue: parserValue)
+            } else {
+                let lookupURL = URL(string: "https://itunes.apple.com/lookup?id=\(result.id)&entity=macSoftware")
+                    ?? result.storeURL
+                source = .appstore(pageURL: lookupURL, parserType: "jq", parserValue: ".results.0.version")
+            }
         } else {
             guard let url = URL(string: versionURL) else { return }
             source = .custom(versionURL: url, parserType: parserType, parserValue: parserValue)
         }
 
         let config = AppConfig(name: appName, source: source)
+
+        // Download and save App Store icon at add/edit time.
+        // Use the stable original ID when editing so the icon lands under the right name.
+        if sourceType == "appstore", let iconURL = selectedAppStoreResult?.iconURL {
+            let iconID = uiState.editingOriginalAppID ?? config.id
+            Task {
+                if let (data, _) = try? await URLSession.shared.data(from: iconURL),
+                   let image = NSImage(data: data) {
+                    service.saveCustomIcon(image, forID: iconID)
+                }
+            }
+        }
 
         if let editingOriginalAppID = uiState.editingOriginalAppID {
             if let updatedConfig = service.updateAppConfig(config, replacingID: editingOriginalAppID) {
@@ -360,5 +536,52 @@ struct AddEditAppSheet: View {
 
         uiState.editingOriginalAppID = nil
         uiState.showingAddAppSheet = false
+    }
+}
+
+private struct AppStoreResultRow: View {
+    let result: AppStoreResult
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            AsyncImage(url: result.iconURL) { image in
+                image.resizable().interpolation(.high)
+            } placeholder: {
+                Color(nsColor: .quaternaryLabelColor)
+            }
+            .frame(width: 28, height: 28)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(result.name)
+                    .font(.body)
+                    .lineLimit(1)
+                Text(result.developer)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            if !result.version.isEmpty {
+                Text(result.version)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 16)
+            } else {
+                Color.clear.frame(width: 16)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
     }
 }

@@ -7,3 +7,5 @@ xcuserdata/
 CODE_REVIEW.md
 RELEASE_CHECKLIST.md
 docs/
+*.pkg
+*.app

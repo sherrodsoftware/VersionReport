@@ -107,16 +107,26 @@ final class TableDragCoordinator: NSObject, NSDraggingSource {
     // MARK: - Helpers
 
     private func resolvedTableView(in window: NSWindow) -> NSTableView? {
-        if let tv = tableView { return tv }
-        tableView = firstTableView(in: window.contentView)
+        // Re-resolve each time: find the table view that contains the mouse point,
+        // so we always hit the right one regardless of view hierarchy changes.
+        let ptInWindow = window.mouseLocationOutsideOfEventStream
+        if let cached = tableView,
+           let ptInTable = cached.superview.map({ _ in cached.convert(ptInWindow, from: nil) }),
+           cached.bounds.contains(ptInTable) {
+            return cached
+        }
+        tableView = tableViewContaining(ptInWindow, in: window.contentView, window: window)
         return tableView
     }
 
-    private func firstTableView(in view: NSView?) -> NSTableView? {
+    private func tableViewContaining(_ ptInWindow: NSPoint, in view: NSView?, window: NSWindow) -> NSTableView? {
         guard let view else { return nil }
-        if let tv = view as? NSTableView { return tv }
+        if let tv = view as? NSTableView {
+            let pt = tv.convert(ptInWindow, from: nil)
+            if tv.bounds.contains(pt) { return tv }
+        }
         for sub in view.subviews {
-            if let found = firstTableView(in: sub) { return found }
+            if let found = tableViewContaining(ptInWindow, in: sub, window: window) { return found }
         }
         return nil
     }

@@ -16,4 +16,5 @@ final class AppUIState: ObservableObject {
     var onMarkAsUnreadRequested: () -> Void = {}
     var onNewGroupRequested: () -> Void = {}
     var onNewGroupFromSelectionRequested: () -> Void = {}
+    var onNewSmartGroupRequested: () -> Void = {}
 }

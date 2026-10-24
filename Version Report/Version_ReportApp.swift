@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Sparkle
 
 final class VersionReportAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -32,6 +33,12 @@ struct Version_ReportApp: App {
     @AppStorage("showBuildNumberColumn") private var showBuildNumberColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
 
+    private let updaterController = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: nil
+    )
+
     var body: some Scene {
         WindowGroup {
             ContentView(
@@ -42,15 +49,22 @@ struct Version_ReportApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Version Report") {
+                    let credits = NSMutableAttributedString()
+                    let smallFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+                    credits.append(NSAttributedString(
+                        string: "© Sherrod Software\n",
+                        attributes: [.font: smallFont]
+                    ))
+                    credits.append(NSAttributedString(
+                        string: "www.sherrodsoftware.com",
+                        attributes: [
+                            .font: smallFont,
+                            .link: URL(string: "https://www.sherrodsoftware.com")!
+                        ]
+                    ))
                     NSApplication.shared.orderFrontStandardAboutPanel(options: [
                         .applicationName: "Version Report",
-                        .credits: NSAttributedString(
-                            string: "© Sherrod Software\nwww.sherrodsoftware.com",
-                            attributes: [
-                                .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
-                                .link: URL(string: "https://www.sherrodsoftware.com")!
-                            ]
-                        )
+                        .credits: credits
                     ])
                 }
             }
@@ -63,8 +77,12 @@ struct Version_ReportApp: App {
                 Button("New Group from Selection") {
                     uiState.onNewGroupFromSelectionRequested()
                 }
-                .keyboardShortcut("n", modifiers: [.command, .shift])
                 .disabled(uiState.selectedAppIDs.isEmpty)
+
+                Button("New Smart Group…") {
+                    uiState.onNewSmartGroupRequested()
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
 
                 Divider()
 
@@ -111,6 +129,17 @@ struct Version_ReportApp: App {
                 }
                 .keyboardShortcut("c", modifiers: [.option, .command])
                 .disabled(uiState.selectedAppIDs.count != 1)
+            }
+
+            CommandGroup(replacing: .help) {
+                Button("Check for Updates…") {
+                    updaterController.checkForUpdates(nil)
+                }
+                Divider()
+                Button("Version Report Help") {
+                    NSWorkspace.shared.open(URL(string: "https://github.com/sherrodsoftware/VersionReport")!)
+                }
+                .keyboardShortcut("?", modifiers: .command)
             }
 
             CommandGroup(after: .toolbar) {

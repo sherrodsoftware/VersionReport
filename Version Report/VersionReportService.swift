@@ -13,7 +13,7 @@ enum CheckFrequency: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .onLaunch:    return "On launch (at most once per hour)"
+        case .onLaunch:    return "On launch"
         case .hourly:      return "Every hour"
         case .every6Hours: return "Every 6 hours"
         case .daily:       return "Every day"
@@ -58,6 +58,7 @@ enum AppSource: Equatable {
     case homebrew(caskName: String)
     case sparkle(feedURL: URL)
     case github(repoPath: String)
+    case appstore(pageURL: URL, parserType: String, parserValue: String)
     case custom(versionURL: URL, parserType: String, parserValue: String)
 
     var displayName: String {
@@ -65,7 +66,23 @@ enum AppSource: Equatable {
         case .homebrew: return "Homebrew Cask"
         case .sparkle: return "Sparkle Feed"
         case .github: return "GitHub Releases"
+        case .appstore: return "App Store"
         case .custom(_, let parserType, _): return "Custom (\(parserType))"
+        }
+    }
+
+    var latestReleaseURL: URL? {
+        switch self {
+        case .homebrew(let caskName):
+            return URL(string: "https://formulae.brew.sh/cask/\(caskName)")
+        case .github(let repoPath):
+            return URL(string: "https://github.com/\(repoPath)/releases/latest")
+        case .appstore:
+            return nil
+        case .custom(let versionURL, _, _):
+            return versionURL
+        case .sparkle:
+            return nil
         }
     }
 }
@@ -86,6 +103,12 @@ extension AppSource: Codable {
             self = .sparkle(feedURL: try container.decode(URL.self, forKey: .feedURL))
         case "github":
             self = .github(repoPath: try container.decode(String.self, forKey: .repoPath))
+        case "appstore":
+            self = .appstore(
+                pageURL: try container.decode(URL.self, forKey: .versionURL),
+                parserType: try container.decode(String.self, forKey: .parserType),
+                parserValue: try container.decode(String.self, forKey: .parserValue)
+            )
         default:
             self = .custom(
                 versionURL: try container.decode(URL.self, forKey: .versionURL),
@@ -107,6 +130,11 @@ extension AppSource: Codable {
         case .github(let repoPath):
             try container.encode("github", forKey: .sourceType)
             try container.encode(repoPath, forKey: .repoPath)
+        case .appstore(let pageURL, let parserType, let parserValue):
+            try container.encode("appstore", forKey: .sourceType)
+            try container.encode(pageURL, forKey: .versionURL)
+            try container.encode(parserType, forKey: .parserType)
+            try container.encode(parserValue, forKey: .parserValue)
         case .custom(let versionURL, let parserType, let parserValue):
             try container.encode(versionURL, forKey: .versionURL)
             try container.encode(parserType, forKey: .parserType)
@@ -200,6 +228,7 @@ final class VersionReportService: ObservableObject {
     @Published var checkHadErrors = false
     @Published var pendingLibraryConflicts: [LibraryConflict] = []
     @Published var groups: [AppGroup] = []
+    @Published var smartGroups: [SmartGroup] = []
 
     private var hourlyTimer: Timer?
     private var dockBadgeRefreshObserver: NSObjectProtocol?
@@ -246,6 +275,10 @@ final class VersionReportService: ObservableObject {
         baseURL.appendingPathComponent("groups.json")
     }
 
+    private var smartGroupsURL: URL {
+        baseURL.appendingPathComponent("smart-groups.json")
+    }
+
     private func loadGroups() -> [AppGroup] {
         guard let data = try? Data(contentsOf: groupsURL),
               let loaded = try? JSONDecoder().decode([AppGroup].self, from: data) else {
@@ -259,6 +292,52 @@ final class VersionReportService: ObservableObject {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         guard let data = try? encoder.encode(groups) else { return }
         try? data.write(to: groupsURL)
+    }
+
+    private func loadSmartGroups() -> [SmartGroup] {
+        guard let data = try? Data(contentsOf: smartGroupsURL),
+              let loaded = try? JSONDecoder().decode([SmartGroup].self, from: data) else {
+            return []
+        }
+        return loaded
+    }
+
+    private func saveSmartGroups(_ smartGroups: [SmartGroup]) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? encoder.encode(smartGroups) else { return }
+        try? data.write(to: smartGroupsURL)
+    }
+
+    func createSmartGroup(_ smartGroup: SmartGroup) {
+        var updated = smartGroups
+        updated.append(smartGroup)
+        saveSmartGroups(updated)
+        smartGroups = updated
+    }
+
+    func updateSmartGroup(_ smartGroup: SmartGroup) {
+        var updated = smartGroups
+        guard let idx = updated.firstIndex(where: { $0.id == smartGroup.id }) else { return }
+        updated[idx] = smartGroup
+        saveSmartGroups(updated)
+        smartGroups = updated
+    }
+
+    func deleteSmartGroup(id: String) {
+        let updated = smartGroups.filter { $0.id != id }
+        saveSmartGroups(updated)
+        smartGroups = updated
+    }
+
+    func moveSmartGroups(from source: IndexSet, to destination: Int) {
+        var updated = smartGroups
+        let items = source.sorted().map { updated[$0] }
+        for index in source.sorted().reversed() { updated.remove(at: index) }
+        let adjustedDest = destination - source.filter { $0 < destination }.count
+        updated.insert(contentsOf: items, at: max(0, min(adjustedDest, updated.count)))
+        saveSmartGroups(updated)
+        smartGroups = updated
     }
 
     func createGroup(named name: String) {
@@ -325,6 +404,7 @@ final class VersionReportService: ObservableObject {
         initializeApplicationSupportIfNeeded()
         pendingLibraryConflicts = loadPersistedConflicts()
         groups = loadGroups()
+        smartGroups = loadSmartGroups()
         reloadApps()
         runVersionCheck()
     }
@@ -677,6 +757,26 @@ final class VersionReportService: ObservableObject {
 
         case .github(let repoPath):
             return try await lookupGitHubRelease(repoPath)?.version
+
+        case .appstore(let pageURL, let parserType, let parserValue):
+            let (data, _) = try await URLSession.shared.data(from: pageURL)
+            switch parserType {
+            case "jq":
+                return parseJSONValue(from: data, keyPath: parserValue)
+            case "jq_trim_comma":
+                return parseJSONValue(from: data, keyPath: parserValue)?
+                    .split(separator: ",", maxSplits: 1)
+                    .first
+                    .map(String.init)
+            case "regex":
+                guard let responseText = String(data: data, encoding: .utf8) else { return nil }
+                return firstRegexVersionMatch(in: responseText, pattern: parserValue)
+            case "highest_version":
+                guard let responseText = String(data: data, encoding: .utf8) else { return nil }
+                return highestRegexVersionMatch(in: responseText, pattern: parserValue)
+            default:
+                return nil
+            }
 
         case .custom(let versionURL, let parserType, let parserValue):
             let (data, _) = try await URLSession.shared.data(from: versionURL)
@@ -1225,7 +1325,8 @@ final class VersionReportService: ObservableObject {
                     lastUpdated: state.flatMap { $0.lastUpdated.flatMap { Self.iso8601Parser.date(from: $0) } },
                     iconName: config.id,
                     hasUnreadUpdate: state?.hasUnreadUpdate ?? false,
-                    lastCheckError: state?.lastCheckError
+                    lastCheckError: state?.lastCheckError,
+                    latestReleaseURL: config.source.latestReleaseURL
                 )
             )
 
@@ -1396,19 +1497,9 @@ final class VersionReportService: ObservableObject {
 
     func runLaunchCheck() {
         let freq = CheckFrequency(rawValue: UserDefaults.standard.string(forKey: "checkFrequency") ?? "") ?? .onLaunch
-        guard freq == .onLaunch else {
-            scheduleAutoCheck()
-            return
-        }
-        // Only check if last check was more than 1 hour ago (or never).
-        let allStates = loadAppState()
-        let mostRecent = allStates.values
-            .compactMap { Self.iso8601Parser.date(from: $0.lastChecked) }
-            .max()
-        if let last = mostRecent, Date().timeIntervalSince(last) < 3600 {
-            return
-        }
+        guard freq != .manual else { return }
         runVersionCheck()
+        scheduleAutoCheck()
     }
 
     func scheduleAutoCheck() {

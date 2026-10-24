@@ -15,4 +15,5 @@ struct AppGroup: Codable, Identifiable {
 enum SidebarSelection: Hashable {
     case allApps
     case group(String)
+    case smartGroup(String)
 }

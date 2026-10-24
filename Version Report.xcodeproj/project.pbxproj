@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A4F54B1D2C8E4C8E90000004 /* VersionReportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4F54B1D2C8E4C8E90000003 /* VersionReportServiceTests.swift */; };
 		A4F54B1D2C8E4C8E90000005 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4F54B1D2C8E4C8E90000002 /* XCTest.framework */; };
+		EC2EDC29308C57F8009DB548 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = EC2EDC28308C57F8009DB548 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,6 +53,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EC2EDC29308C57F8009DB548 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -124,6 +126,7 @@
 			);
 			name = "Version Report";
 			packageProductDependencies = (
+				EC2EDC28308C57F8009DB548 /* Sparkle */,
 			);
 			productName = "Version Report";
 			productReference = ECA538E72FDB2FF500765A43 /* Version Report.app */;
@@ -157,6 +160,9 @@
 			);
 			mainGroup = EC5D1A6F2FC8B4CC003AAA1A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				EC2EDC27308C57F8009DB548 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EC5D1A6F2FC8B4CC003AAA1A;
 			projectDirPath = "";
@@ -364,10 +370,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_ENTITLEMENTS = "Version Report/Version Report.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = 15;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = LAR9U97K23;
 				ENABLE_APP_SANDBOX = NO;
@@ -381,6 +388,8 @@
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_SUFeedURL = "https://www.sherrodsoftware.com/versionreport/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "VT27+9Hd6zIkjwkJmirBwgPjuqSQbTKW2stJdRNA8Jc=";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -394,8 +403,8 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 2026.10.22;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 2026.10.23;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sherrodsoftware.VersionReport;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -425,13 +434,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = "Version Report/Version Report.entitlements";
 				CODE_SIGN_IDENTITY = "Developer ID Application";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 37;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 15;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=macosx*]" = LAR9U97K23;
+				DEVELOPMENT_TEAM = LAR9U97K23;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -443,6 +452,8 @@
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_SUFeedURL = "https://www.sherrodsoftware.com/versionreport/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "VT27+9Hd6zIkjwkJmirBwgPjuqSQbTKW2stJdRNA8Jc=";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -456,8 +467,8 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 2026.10.22;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 2026.10.23;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sherrodsoftware.VersionReport;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -512,6 +523,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EC2EDC27308C57F8009DB548 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EC2EDC28308C57F8009DB548 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EC2EDC27308C57F8009DB548 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = EC5D1A702FC8B4CC003AAA1A /* Project object */;
 }

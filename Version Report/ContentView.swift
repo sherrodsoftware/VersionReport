@@ -28,6 +28,7 @@ struct MonitoredApp: Identifiable, Equatable {
     let iconName: String
     let hasUnreadUpdate: Bool
     let lastCheckError: String?
+    let latestReleaseURL: URL?
 
     var unreadSortValue: Int {
         hasUnreadUpdate ? 1 : 0
@@ -75,14 +76,25 @@ struct ContentView: View {
     @State private var sidebarSelection: SidebarSelection? = .allApps
     @State private var showingNewGroupAlert = false
     @State private var newGroupName = ""
+    @State private var showingSmartGroupSheet = false
+    @State private var editingSmartGroup: SmartGroup?
+    @State private var showingRemoveFromGroupConfirmation = false
 
 
     private var filteredApps: [MonitoredApp] {
         var baseApps = service.apps
 
-        if case .group(let groupID) = sidebarSelection ?? .allApps,
-           let group = service.groups.first(where: { $0.id == groupID }) {
-            baseApps = baseApps.filter { group.appIDs.contains($0.id) }
+        switch sidebarSelection ?? .allApps {
+        case .allApps:
+            break
+        case .group(let groupID):
+            if let group = service.groups.first(where: { $0.id == groupID }) {
+                baseApps = baseApps.filter { group.appIDs.contains($0.id) }
+            }
+        case .smartGroup(let sgID):
+            if let sg = service.smartGroups.first(where: { $0.id == sgID }) {
+                baseApps = baseApps.filter { sg.evaluate($0) }
+            }
         }
 
         let sortedApps = baseApps.sorted(using: sortOrder)
@@ -135,6 +147,16 @@ struct ContentView: View {
 
     private func selectedAppsContainRead(_ ids: Set<MonitoredApp.ID>) -> Bool {
         ids.contains { id in service.apps.first(where: { $0.id == id })?.hasUnreadUpdate == false }
+    }
+
+    private var currentGroupID: String? {
+        if case .group(let id) = sidebarSelection { return id }
+        return nil
+    }
+
+    private var isSmartGroupSelected: Bool {
+        if case .smartGroup = sidebarSelection { return true }
+        return false
     }
 
     private func editSelectedApp() {
@@ -447,14 +469,20 @@ struct ContentView: View {
                         Image(systemName: "plus").frame(width: 16, height: 16)
                     }
                     .menuIndicator(.hidden)
+                    .disabled(isSmartGroupSelected)
 
                     Button {
                         guard !uiState.selectedAppIDs.isEmpty else { return }
-                        uiState.showingDeleteConfirmation = true
+                        if currentGroupID != nil {
+                            showingRemoveFromGroupConfirmation = true
+                        } else {
+                            uiState.showingDeleteConfirmation = true
+                        }
                     } label: {
                         Image(systemName: "minus").frame(width: 16, height: 16)
                     }
-                    .disabled(uiState.selectedAppIDs.isEmpty)
+                    .disabled(uiState.selectedAppIDs.isEmpty || isSmartGroupSelected)
+                    .keyboardShortcut(.delete, modifiers: .command)
                 }
 
                 Spacer()
@@ -488,7 +516,7 @@ struct ContentView: View {
         Group {
             if showAppDetail {
                 NavigationSplitView {
-                    SidebarView(service: service, selection: $sidebarSelection)
+                    SidebarView(service: service, selection: $sidebarSelection, showingSmartGroupSheet: $showingSmartGroupSheet, editingSmartGroup: $editingSmartGroup)
                         .navigationSplitViewColumnWidth(min: 170, ideal: 210, max: 300)
                 } content: {
                     contentColumn
@@ -503,12 +531,12 @@ struct ContentView: View {
                             AppDetailPlaceholderView()
                         }
                     }
-                    .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
+                    .navigationSplitViewColumnWidth(min: 300, ideal: 320, max: 400)
                 }
 
             } else {
                 NavigationSplitView {
-                    SidebarView(service: service, selection: $sidebarSelection)
+                    SidebarView(service: service, selection: $sidebarSelection, showingSmartGroupSheet: $showingSmartGroupSheet, editingSmartGroup: $editingSmartGroup)
                         .navigationSplitViewColumnWidth(min: 170, ideal: 210, max: 300)
                 } detail: {
                     contentColumn
@@ -523,6 +551,26 @@ struct ContentView: View {
         }
         .sheet(isPresented: $uiState.showingLibraryConflictsSheet) {
             LibraryConflictsSheet(service: service, uiState: uiState)
+        }
+        .sheet(isPresented: $showingSmartGroupSheet) {
+            SmartGroupSheet(
+                service: service,
+                editingSmartGroup: editingSmartGroup,
+                onDismiss: {
+                    showingSmartGroupSheet = false
+                    editingSmartGroup = nil
+                },
+                onSave: { sg in
+                    if editingSmartGroup != nil {
+                        service.updateSmartGroup(sg)
+                    } else {
+                        service.createSmartGroup(sg)
+                        sidebarSelection = .smartGroup(sg.id)
+                    }
+                    showingSmartGroupSheet = false
+                    editingSmartGroup = nil
+                }
+            )
         }
         .alert("Delete App?", isPresented: $uiState.showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
@@ -547,6 +595,24 @@ struct ContentView: View {
                 Text("Remove \(selectedApp.name) from Version Report?")
             } else {
                 Text("Remove \(selectedApps.count) apps from Version Report?")
+            }
+        }
+        .alert("Remove from Group?", isPresented: $showingRemoveFromGroupConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Remove", role: .destructive) {
+                guard let groupID = currentGroupID else { return }
+                for appID in uiState.selectedAppIDs {
+                    service.removeApp(appID, fromGroup: groupID)
+                }
+                uiState.selectedAppIDs.removeAll()
+            }
+        } message: {
+            let selectedApps = service.apps.filter { uiState.selectedAppIDs.contains($0.id) }
+            let groupName = currentGroupID.flatMap { id in service.groups.first { $0.id == id }?.name } ?? "this group"
+            if selectedApps.count == 1, let app = selectedApps.first {
+                Text("Remove \(app.name) from \(groupName)?")
+            } else {
+                Text("Remove \(selectedApps.count) apps from \(groupName)?")
             }
         }
         .searchable(text: $searchText, placement: .toolbar)
@@ -579,7 +645,7 @@ struct ContentView: View {
                 .help(showAppDetail ? "Hide App Details" : "Show App Details")
             }
         }
-        .frame(minWidth: 960, minHeight: 560)
+        .frame(minWidth: 1100, minHeight: 620)
         .onAppear {
             service.requestNotificationPermission()
             service.loadApps()
@@ -593,7 +659,11 @@ struct ContentView: View {
             uiState.onEditRequested = { editSelectedApp() }
             uiState.onDeleteRequested = {
                 guard !uiState.selectedAppIDs.isEmpty else { return }
-                uiState.showingDeleteConfirmation = true
+                if currentGroupID != nil {
+                    showingRemoveFromGroupConfirmation = true
+                } else {
+                    uiState.showingDeleteConfirmation = true
+                }
             }
             uiState.onAddToLibraryRequested = { addSelectedAppToLibrary() }
             uiState.onMarkAsReadRequested = { markSelectedUpdatesAsRead() }
@@ -605,6 +675,10 @@ struct ContentView: View {
             uiState.onNewGroupFromSelectionRequested = {
                 newGroupName = ""
                 showingNewGroupAlert = true
+            }
+            uiState.onNewSmartGroupRequested = {
+                editingSmartGroup = nil
+                showingSmartGroupSheet = true
             }
         }
         .onChange(of: service.apps) { _, apps in
