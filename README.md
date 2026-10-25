@@ -2,7 +2,7 @@
 
 A macOS app for tracking the latest versions of the software you manage — so you always know whether your fleet is running what it should be.
 
-![macOS](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
+![macOS](https://img.shields.io/badge/macOS-15%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
 
 <p align="center">
   <img src="images/VersionReportWindow.png" alt="Version Report main window" width="720" />
@@ -14,11 +14,13 @@ A macOS app for tracking the latest versions of the software you manage — so y
 
 Version Report keeps a list of your important apps and checks each one for the latest available version. When something updates, it flags it so you can decide whether action is needed.
 
-- **Automatic checks** — runs a version check on launch and every hour in the background
+- **Automatic checks** — runs a version check on launch and on a schedule in the background
 - **Unread badges** — new updates bubble to the top and are marked with a blue dot until you dismiss them
 - **App detail panel** — double-click any app to see its full version history, source, and dates at a glance
 - **Groups** — organize apps into custom groups (drag apps from the table onto a group, or right-click → Add to Group)
+- **Smart Groups** — automatically filter apps by source, update status, or other criteria
 - **Built-in library** — a curated list of common macOS apps ready to add with a few clicks
+- **Automatic updates** — Version Report keeps itself up to date via Sparkle
 
 ---
 
@@ -28,6 +30,7 @@ Version Report knows how to check versions from four sources:
 
 | Source | How it works |
 |--------|-------------|
+| **App Store** | Looks up the current Mac App Store version via the iTunes Search API |
 | **Homebrew Cask** | Queries the Homebrew formula for the latest cask version |
 | **Sparkle Feed** | Parses an app's Sparkle update XML feed |
 | **GitHub Releases** | Reads the latest release tag from a public GitHub repository |
@@ -56,7 +59,7 @@ To add your own app to the library (so you can reuse its config across machines)
 
 ## Building from source
 
-Requires Xcode 15 or later and macOS 14 Sonoma or later.
+Requires Xcode 16 or later and macOS 15 Sequoia or later.
 
 ```bash
 git clone https://github.com/sherrodsoftware/VersionReport.git
