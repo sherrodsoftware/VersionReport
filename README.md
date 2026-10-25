@@ -5,7 +5,7 @@ A macOS app for tracking the latest versions of the software you manage — so y
 ![macOS](https://img.shields.io/badge/macOS-15%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
 
 <p align="center">
-  <img src="images/VersionReportWindow.png" alt="Version Report main window" width="720" />
+  <img src="images/VersionReportWindow.png?v=2" alt="Version Report main window" width="720" />
 </p>
 
 ---
