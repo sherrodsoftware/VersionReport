@@ -9,8 +9,18 @@ import SwiftUI
 import Sparkle
 
 final class VersionReportAppDelegate: NSObject, NSApplicationDelegate {
+    let updaterController = SPUStandardUpdaterController(
+        startingUpdater: false,
+        updaterDelegate: nil,
+        userDriverDelegate: nil
+    )
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         requestDockBadgeRefresh()
+        // Delay updater start so the main window appears before any Sparkle dialogs
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            try? self.updaterController.updater.start()
+        }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -33,11 +43,7 @@ struct Version_ReportApp: App {
     @AppStorage("showBuildNumberColumn") private var showBuildNumberColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
 
-    private let updaterController = SPUStandardUpdaterController(
-        startingUpdater: true,
-        updaterDelegate: nil,
-        userDriverDelegate: nil
-    )
+    private var updaterController: SPUStandardUpdaterController { appDelegate.updaterController }
 
     var body: some Scene {
         WindowGroup {

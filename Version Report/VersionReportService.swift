@@ -925,6 +925,55 @@ final class VersionReportService: ObservableObject {
         return "\(parts[0])/\(parts[1])"
     }
 
+    private func iTunesID(from url: URL) -> Int? {
+        // iTunes Lookup API: ?id=12345
+        if let id = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "id" })?.value.flatMap(Int.init) {
+            return id
+        }
+        // App Store page URL: /id12345
+        if let match = url.path.range(of: #"/id(\d+)"#, options: .regularExpression) {
+            return Int(url.path[match].dropFirst(3))
+        }
+        return nil
+    }
+
+    private func batchLookupAppStoreVersions(configs: [(config: AppConfig, pageURL: URL)]) async -> [String: String] {
+        let pairs = configs.compactMap { item -> (Int, String)? in
+            guard let id = iTunesID(from: item.pageURL) else { return nil }
+            return (id, item.config.id)
+        }
+        guard !pairs.isEmpty,
+              let url = URL(string: "https://itunes.apple.com/lookup?id=\(pairs.map { "\($0.0)" }.joined(separator: ","))&entity=macSoftware") else {
+            return [:]
+        }
+        guard let (data, response) = try? await URLSession.shared.data(from: url) else {
+            print("[AppStore batch] network error")
+            return [:]
+        }
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            print("[AppStore batch] HTTP \(http.statusCode)")
+            return [:]
+        }
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let results = json["results"] as? [[String: Any]] else {
+            print("[AppStore batch] unexpected response: \(String(data: data, encoding: .utf8) ?? "<binary>")")
+            return [:]
+        }
+        print("[AppStore batch] got \(results.count) results for \(pairs.count) IDs")
+
+        var trackIdToVersion: [Int: String] = [:]
+        for result in results {
+            if let trackId = result["trackId"] as? Int, let version = result["version"] as? String {
+                trackIdToVersion[trackId] = version
+            }
+        }
+        return Dictionary(uniqueKeysWithValues: pairs.compactMap { (trackId, configId) -> (String, String)? in
+            guard let v = trackIdToVersion[trackId] else { return nil }
+            return (configId, v)
+        })
+    }
+
     func runVersionCheck() {
 
         if isChecking {
@@ -940,8 +989,44 @@ final class VersionReportService: ObservableObject {
             var detectedUpdates: [(appName: String, previousVersion: String, currentVersion: String)] = []
             var fetchErrors: [String] = []
 
+            // Batch-fetch all App Store apps in a single iTunes Lookup API call
+            let appStoreItems: [(config: AppConfig, pageURL: URL)] = configs.compactMap { config in
+                if case .appstore(let pageURL, _, _) = config.source { return (config, pageURL) }
+                return nil
+            }
+            var batchedVersions = await batchLookupAppStoreVersions(configs: appStoreItems)
+            let appStoreIDs = Set(appStoreItems.map { $0.config.id })
+
+            // Fall back to individual lookups for any app the batch missed
+            await withTaskGroup(of: (String, String?).self) { group in
+                for item in appStoreItems where batchedVersions[item.config.id] == nil {
+                    group.addTask {
+                        let version = try? await self.fetchCurrentVersion(for: item.config)
+                        return (item.config.id, version ?? nil)
+                    }
+                }
+                for await (configID, version) in group {
+                    if let version { batchedVersions[configID] = version }
+                }
+            }
+
+            for item in appStoreItems {
+                if let version = batchedVersions[item.config.id] {
+                    clearCheckError(for: item.config)
+                    let result = updateAppState(version: version, for: item.config)
+                    if result.didUpdate {
+                        sendVersionUpdateNotification(appName: item.config.name, previousVersion: result.previousVersion, currentVersion: version)
+                        detectedUpdates.append((appName: item.config.name, previousVersion: result.previousVersion, currentVersion: version))
+                    }
+                } else {
+                    let msg = "App Store lookup failed"
+                    fetchErrors.append("\(item.config.name): \(msg)")
+                    saveCheckError(msg, for: item.config)
+                }
+            }
+
             await withTaskGroup(of: (AppConfig, String?, Error?).self) { group in
-                for config in configs {
+                for config in configs where !appStoreIDs.contains(config.id) {
                     group.addTask {
                         do {
                             let version = try await self.fetchCurrentVersion(for: config)

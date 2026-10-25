@@ -45,9 +45,9 @@
   {
     "id": "blackmagic_raw_player",
     "name": "Blackmagic RAW Player",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
-    "versionURL": "https://apps.apple.com/us/app/blackmagic-raw-player/id1435415804?mt=12&platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=1435415804&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -96,9 +96,9 @@
   {
     "id": "compressor",
     "name": "Compressor",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/compressor-encode-media/id6746516157?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=6746516157&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -117,17 +117,17 @@
   {
     "id": "davinci_resolve",
     "name": "DaVinci Resolve",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
-    "versionURL": "https://apps.apple.com/us/app/davinci-resolve/id571213070?mt=12&platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=571213070&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
     "id": "davinci_resolve_studio",
     "name": "DaVinci Resolve Studio",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+",
-    "versionURL": "https://apps.apple.com/us/app/davinci-resolve-studio/id900392332?mt=12&platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=900392332&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -165,9 +165,9 @@
   {
     "id": "final_cut_pro",
     "name": "Final Cut Pro",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/final-cut-pro-create-video/id1631624924?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=424389933&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -191,9 +191,9 @@
   {
     "id": "garageband",
     "name": "GarageBand",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/garageband/id682658836?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=682658836&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -241,9 +241,9 @@
   {
     "id": "imovie",
     "name": "iMovie",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/imovie/id408981434?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=408981434&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -279,9 +279,9 @@
   {
     "id": "keynote",
     "name": "Keynote",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/keynote-design-presentations/id361285480?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=361285480&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -300,17 +300,17 @@
   {
     "id": "logic_pro",
     "name": "Logic Pro",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/logic-pro-make-music/id1615087040?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=634148309&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
     "id": "mainstage",
     "name": "MainStage",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/mainstage-perform-live/id6746637089?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=6746637089&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -358,9 +358,9 @@
   {
     "id": "motion",
     "name": "Motion",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/motion-animate-effects/id6746637149?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=6746637149&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -384,9 +384,9 @@
   {
     "id": "numbers",
     "name": "Numbers",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/numbers-make-spreadsheets/id361304891?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=361304891&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -410,17 +410,17 @@
   {
     "id": "pages",
     "name": "Pages",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/pages-create-documents/id361309726?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=361309726&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
     "id": "pixelmator_pro",
     "name": "Pixelmator Pro",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/pixelmator-pro-edit-images/id6746662575?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=6746662575&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
@@ -582,9 +582,9 @@
   {
     "id": "xcode",
     "name": "Xcode",
-    "parserType": "regex",
-    "parserValue": "primarySubtitle\":\"Version [0-9]+(\\.[0-9]+)+\"",
-    "versionURL": "https://apps.apple.com/us/app/xcode/id497799835?platform=mac",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=497799835&entity=macSoftware",
     "sourceType": "appstore"
   },
   {
