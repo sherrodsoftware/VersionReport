@@ -69,6 +69,8 @@ struct ContentView: View {
     @ObservedObject var uiState: AppUIState
     @State private var sortOrder = [KeyPathComparator(\MonitoredApp.name)]
     @State private var columnCustomization = TableColumnCustomization<MonitoredApp>()
+    // v2: earlier layouts saved the status and icon columns under per-launch IDs and can't be restored correctly.
+    private static let columnCustomizationKey = "columnCustomization.v2"
     @AppStorage("showSourceColumn") private var showSourceColumn = false
     @AppStorage("showVendorColumn") private var showVendorColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
@@ -285,12 +287,14 @@ struct ContentView: View {
                 }
             }
             .width(16)
+            .customizationID("status")
 
             TableColumn("") { app in
                 Image(nsImage: service.icon(for: app))
                     .resizable().scaledToFit().frame(width: 20, height: 20)
             }
             .width(32)
+            .customizationID("icon")
 
             TableColumn("App", value: \.name) { app in
                 Text(app.name).lineLimit(1)
@@ -667,7 +671,7 @@ struct ContentView: View {
             applySortOrder(for: service.apps)
             service.runLaunchCheck()
             service.scheduleAutoCheck()
-            if let data = UserDefaults.standard.data(forKey: "columnCustomization"),
+            if let data = UserDefaults.standard.data(forKey: Self.columnCustomizationKey),
                let saved = try? JSONDecoder().decode(TableColumnCustomization<MonitoredApp>.self, from: data) {
                 columnCustomization = saved
             }
@@ -701,7 +705,7 @@ struct ContentView: View {
         }
         .onChange(of: columnCustomization) { _, newValue in
             if let data = try? JSONEncoder().encode(newValue) {
-                UserDefaults.standard.set(data, forKey: "columnCustomization")
+                UserDefaults.standard.set(data, forKey: Self.columnCustomizationKey)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .versionReportCheckNow)) { _ in
