@@ -97,6 +97,10 @@ struct AppDetailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
+                    if let vendor = app.vendor {
+                        detailRow("Vendor", value: vendor)
+                    }
+
                     detailRow("Current Version", value: app.displayVersion)
 
                     if let build = app.buildNumber {

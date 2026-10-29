@@ -15,6 +15,14 @@ struct AddEditAppSheet: View {
     let uiState: AppUIState
 
     @State private var appName = ""
+    @State private var vendor = ""
+    @State private var originalVendor: String?
+
+    private var resolvedVendor: String? {
+        let trimmed = vendor.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        return originalVendor == nil ? nil : ""
+    }
     @State private var sourceType = "appstore"
     @State private var caskName = ""
     @State private var sparkleURL = ""
@@ -41,6 +49,8 @@ struct AddEditAppSheet: View {
                 .font(.headline)
 
             TextField("App Name", text: $appName)
+
+            TextField("Vendor (optional)", text: $vendor)
 
             Picker("Source", selection: $sourceType) {
                 Text("App Store").tag("appstore")
@@ -289,6 +299,7 @@ struct AddEditAppSheet: View {
                         .onTapGesture {
                             selectedAppStoreResult = result
                             appName = result.name
+                            if vendor.isEmpty { vendor = result.developer }
                         }
                         Divider().padding(.leading, 44)
                     }
@@ -388,6 +399,8 @@ struct AddEditAppSheet: View {
         guard let editingID = uiState.editingOriginalAppID,
               let config = service.loadAppConfigs().first(where: { $0.id == editingID }) else {
             appName = ""
+            vendor = ""
+            originalVendor = nil
             sourceType = "appstore"
             caskName = ""
             sparkleURL = ""
@@ -403,6 +416,8 @@ struct AddEditAppSheet: View {
         }
 
         appName = config.name
+        vendor = config.vendor ?? ""
+        originalVendor = config.vendor
         switch config.source {
         case .homebrew(let name):
             sourceType = "homebrew"
@@ -488,7 +503,11 @@ struct AddEditAppSheet: View {
             source = .custom(versionURL: url, parserType: parserType, parserValue: parserValue)
         }
 
-        let config = AppConfig(name: appName, source: source)
+        let config = AppConfig(
+            name: appName,
+            source: source,
+            vendor: resolvedVendor
+        )
 
         // Download and save App Store icon at add/edit time.
         // Use the stable original ID when editing so the icon lands under the right name.

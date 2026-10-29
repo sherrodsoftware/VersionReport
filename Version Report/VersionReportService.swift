@@ -145,17 +145,25 @@ extension AppSource: Codable {
 
 struct AppConfig: Codable, Identifiable, Equatable {
     enum CodingKeys: String, CodingKey {
-        case id, name
+        case id, name, vendor
     }
 
     var id: String
     let name: String
     let source: AppSource
+    // nil = never set (eligible for backfill from the bundled library); "" = user cleared it.
+    var vendor: String?
 
-    init(id: String? = nil, name: String, source: AppSource) {
+    var displayVendor: String? {
+        guard let trimmed = vendor?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+        return trimmed
+    }
+
+    init(id: String? = nil, name: String, source: AppSource, vendor: String? = nil) {
         self.id = id ?? Self.defaultID(for: name)
         self.name = name
         self.source = source
+        self.vendor = vendor
     }
 
     init(from decoder: Decoder) throws {
@@ -164,7 +172,8 @@ struct AppConfig: Codable, Identifiable, Equatable {
         self.init(
             id: try container.decodeIfPresent(String.self, forKey: .id),
             name: name,
-            source: try AppSource(from: decoder)
+            source: try AppSource(from: decoder),
+            vendor: try container.decodeIfPresent(String.self, forKey: .vendor)
         )
     }
 
@@ -172,6 +181,7 @@ struct AppConfig: Codable, Identifiable, Equatable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(vendor, forKey: .vendor)
         try source.encode(to: encoder)
     }
 
@@ -514,6 +524,7 @@ final class VersionReportService: ObservableObject {
         initializeIconsIfNeeded()
         mergeBundledAppLibrary()
         mergeBundledAppConfigsIntoMonitoredApps()
+        backfillVendorsInMonitoredApps()
         mergeBundledIcons()
 
         if !fileManager.fileExists(atPath: appStateURL.path) {
@@ -553,7 +564,12 @@ final class VersionReportService: ObservableObject {
         var didChangeLibrary = false
 
         for bundledConfig in bundledConfigs {
-            if !userLibraryConfigs.contains(where: { $0.id == bundledConfig.id }) {
+            if let index = userLibraryConfigs.firstIndex(where: { $0.id == bundledConfig.id }) {
+                if userLibraryConfigs[index].vendor == nil, let vendor = bundledConfig.vendor {
+                    userLibraryConfigs[index].vendor = vendor
+                    didChangeLibrary = true
+                }
+            } else {
                 // New entry: add it; never overwrite an entry the user already has.
                 userLibraryConfigs.append(bundledConfig)
                 didChangeLibrary = true
@@ -562,6 +578,34 @@ final class VersionReportService: ObservableObject {
 
         guard didChangeLibrary else { return }
         saveAppLibrary(userLibraryConfigs)
+    }
+
+    func backfillVendorsInMonitoredApps() {
+
+        guard let bundledLibraryURL = bundledAppLibraryURL,
+              let bundledData = try? Data(contentsOf: bundledLibraryURL),
+              let bundledConfigs = try? JSONDecoder().decode([AppConfig].self, from: bundledData) else {
+            return
+        }
+
+        let bundledVendors = Dictionary(
+            bundledConfigs.compactMap { config in config.vendor.map { (config.id, $0) } },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        var configs = loadAppConfigs()
+        var didChange = false
+
+        for index in configs.indices where configs[index].vendor == nil {
+            if let vendor = bundledVendors[configs[index].id] {
+                configs[index].vendor = vendor
+                didChange = true
+            }
+        }
+
+        if didChange {
+            saveAppConfigs(configs)
+        }
     }
 
     func mergeBundledAppConfigsIntoMonitoredApps() {
@@ -684,6 +728,10 @@ final class VersionReportService: ObservableObject {
         loadApps()
 
         Task {
+            await applyDetectedVendorIfNeeded(for: config)
+        }
+
+        Task {
             do {
                 if let version = try await fetchCurrentVersion(for: config) {
 
@@ -711,6 +759,51 @@ final class VersionReportService: ObservableObject {
         }
     }
 
+    // Homebrew casks and Sparkle feeds carry no vendor metadata, so only these two sources are detectable.
+    func detectVendor(for source: AppSource) async -> String? {
+        switch source {
+        case .appstore(let pageURL, _, _):
+            guard let id = iTunesID(from: pageURL),
+                  let url = URL(string: "https://itunes.apple.com/lookup?id=\(id)&entity=macSoftware"),
+                  let (data, _) = try? await URLSession.shared.data(from: url),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let result = (json["results"] as? [[String: Any]])?.first,
+                  let artist = result["artistName"] as? String else { return nil }
+            return artist.replacingOccurrences(
+                of: #",?\s+(Inc\.?|LLC|L\.L\.C\.|Ltd\.?|Limited|GmbH|Corp\.?|Corporation|Co\.?|S\.A\.|AB|Pty\.? Ltd\.?)$"#,
+                with: "",
+                options: [.regularExpression, .caseInsensitive]
+            )
+
+        case .github(let repoPath):
+            guard let owner = Self.normalizeGitHubRepoPath(repoPath).split(separator: "/").first,
+                  let url = URL(string: "https://api.github.com/users/\(owner)") else { return nil }
+            var request = URLRequest(url: url)
+            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+            guard let (data, response) = try? await URLSession.shared.data(for: request),
+                  (response as? HTTPURLResponse)?.statusCode == 200,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+            let name = (json["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return (name?.isEmpty == false ? name : nil) ?? json["login"] as? String
+
+        default:
+            return nil
+        }
+    }
+
+    private func applyDetectedVendorIfNeeded(for config: AppConfig) async {
+        guard config.vendor == nil, let vendor = await detectVendor(for: config.source) else { return }
+
+        await MainActor.run {
+            var configs = loadAppConfigs()
+            guard let index = configs.firstIndex(where: { $0.id == config.id }),
+                  configs[index].vendor == nil else { return }
+            configs[index].vendor = vendor
+            saveAppConfigs(configs)
+            apps = loadMonitoredApps()
+        }
+    }
+
     func updateAppConfig(_ config: AppConfig, replacingID id: String) -> AppConfig? {
         var configs = loadAppConfigs()
 
@@ -722,7 +815,8 @@ final class VersionReportService: ObservableObject {
         let updatedConfig = AppConfig(
             id: existingConfig.id,
             name: config.name,
-            source: config.source
+            source: config.source,
+            vendor: config.vendor
         )
 
         configs[index] = updatedConfig
@@ -1403,6 +1497,7 @@ final class VersionReportService: ObservableObject {
                 MonitoredApp(
                     id: config.id,
                     name: config.name,
+                    vendor: config.displayVendor,
                     version: state?.version ?? "Unknown",
                     previousVersion: state?.previousVersion ?? "Unknown",
                     sourceType: config.source.displayName,

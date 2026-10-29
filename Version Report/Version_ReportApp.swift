@@ -40,6 +40,7 @@ struct Version_ReportApp: App {
     @StateObject private var uiState = AppUIState()
     @NSApplicationDelegateAdaptor(VersionReportAppDelegate.self) private var appDelegate
     @AppStorage("showSourceColumn") private var showSourceColumn = false
+    @AppStorage("showVendorColumn") private var showVendorColumn = false
     @AppStorage("showBuildNumberColumn") private var showBuildNumberColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
 
@@ -162,6 +163,7 @@ struct Version_ReportApp: App {
                 Divider()
                 Toggle("Show Previous Version Column", isOn: $showPreviousVersionColumn)
                 Toggle("Show Current Build Column", isOn: $showBuildNumberColumn)
+                Toggle("Show Vendor Column", isOn: $showVendorColumn)
                 Toggle("Show Source Column", isOn: $showSourceColumn)
             }
         }

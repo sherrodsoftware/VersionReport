@@ -172,12 +172,28 @@
     "caskName": "downie"
   },
   {
+    "id": "dropbox",
+    "name": "Dropbox",
+    "vendor": "Dropbox",
+    "parserType": "jq_trim_comma",
+    "parserValue": ".version",
+    "versionURL": "https://formulae.brew.sh/api/cask/dropbox.json"
+  },
+  {
     "id": "editready",
     "name": "EditReady",
     "vendor": "Hedge",
     "parserType": "regex",
     "parserValue": "EditReady [0-9]+(\\.[0-9]+)+",
     "versionURL": "https://docs.hedge.video/editready/releases"
+  },
+  {
+    "id": "elgato_stream_deck",
+    "name": "Elgato Stream Deck",
+    "vendor": "Elgato",
+    "parserType": "jq_trim_comma",
+    "parserValue": ".version",
+    "versionURL": "https://formulae.brew.sh/api/cask/elgato-stream-deck.json"
   },
   {
     "id": "final_cut_pro",
@@ -303,6 +319,15 @@
     "vendor": "Jabra",
     "sourceType": "homebrew",
     "caskName": "jabra-direct"
+  },
+  {
+    "id": "jamf_extender",
+    "name": "Jamf Extender",
+    "vendor": "Jamf",
+    "parserType": "jq",
+    "parserValue": ".results.0.version",
+    "versionURL": "https://itunes.apple.com/lookup?id=6761075435&entity=macSoftware",
+    "sourceType": "appstore"
   },
   {
     "id": "keyboard_maestro",

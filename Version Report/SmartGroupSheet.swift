@@ -114,14 +114,7 @@ private struct CriterionRow: View {
     let onRemove: () -> Void
 
     private var availableOperators: [SmartGroupOperator] {
-        switch criterion.field {
-        case .sourceType:
-            return [.equals, .notEquals]
-        case .hasUnreadUpdate:
-            return [.isTrue, .isFalse]
-        case .lastChecked, .lastUpdated:
-            return [.lessThanDaysAgo, .moreThanDaysAgo, .never]
-        }
+        validOperators(for: criterion.field)
     }
 
     private var needsTextValue: Bool {
@@ -129,6 +122,10 @@ private struct CriterionRow: View {
         case .lessThanDaysAgo, .moreThanDaysAgo: return true
         default: return false
         }
+    }
+
+    private var needsVendorText: Bool {
+        criterion.field == .vendor && criterion.op != .isNotSet
     }
 
     private var needsSourcePicker: Bool {
@@ -163,6 +160,8 @@ private struct CriterionRow: View {
             .labelsHidden()
             .fixedSize()
             .onChange(of: criterion.op) { _, newOp in
+                // Keep typed vendor text when switching between is / is not / contains.
+                if criterion.field == .vendor && newOp != .isNotSet { return }
                 criterion.value = defaultValue(for: criterion.field, op: newOp)
             }
 
@@ -175,6 +174,10 @@ private struct CriterionRow: View {
                 }
                 .labelsHidden()
                 .fixedSize()
+            } else if needsVendorText {
+                TextField("Vendor", text: $criterion.value)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 160)
             } else if needsTextValue {
                 TextField("days", text: $criterion.value)
                     .textFieldStyle(.roundedBorder)
@@ -194,6 +197,7 @@ private struct CriterionRow: View {
     private func validOperators(for field: SmartGroupField) -> [SmartGroupOperator] {
         switch field {
         case .sourceType:      return [.equals, .notEquals]
+        case .vendor:          return [.equals, .notEquals, .contains, .isNotSet]
         case .hasUnreadUpdate: return [.isTrue, .isFalse]
         case .lastChecked, .lastUpdated: return [.lessThanDaysAgo, .moreThanDaysAgo, .never]
         }
@@ -202,6 +206,7 @@ private struct CriterionRow: View {
     private func defaultValue(for field: SmartGroupField, op: SmartGroupOperator) -> String {
         switch field {
         case .sourceType:      return "Homebrew Cask"
+        case .vendor:          return ""
         case .hasUnreadUpdate: return ""
         case .lastChecked, .lastUpdated:
             switch op {

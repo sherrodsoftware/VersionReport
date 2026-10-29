@@ -14,6 +14,7 @@ enum SmartGroupMatch: String, Codable, CaseIterable {
 
 enum SmartGroupField: String, Codable, CaseIterable {
     case sourceType = "sourceType"
+    case vendor = "vendor"
     case hasUnreadUpdate = "hasUnreadUpdate"
     case lastChecked = "lastChecked"
     case lastUpdated = "lastUpdated"
@@ -21,6 +22,7 @@ enum SmartGroupField: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .sourceType: return "Source"
+        case .vendor: return "Vendor"
         case .hasUnreadUpdate: return "Update Status"
         case .lastChecked: return "Last Checked"
         case .lastUpdated: return "Last Updated"
@@ -31,6 +33,8 @@ enum SmartGroupField: String, Codable, CaseIterable {
 enum SmartGroupOperator: String, Codable, CaseIterable {
     case equals = "equals"
     case notEquals = "notEquals"
+    case contains = "contains"
+    case isNotSet = "isNotSet"
     case isTrue = "isTrue"
     case isFalse = "isFalse"
     case lessThanDaysAgo = "lessThanDaysAgo"
@@ -41,6 +45,8 @@ enum SmartGroupOperator: String, Codable, CaseIterable {
         switch self {
         case .equals: return "is"
         case .notEquals: return "is not"
+        case .contains: return "contains"
+        case .isNotSet: return "is not set"
         case .isTrue: return "has unread update"
         case .isFalse: return "is up to date"
         case .lessThanDaysAgo: return "within the last (days)"
@@ -75,6 +81,24 @@ struct SmartGroup: Codable, Identifiable {
                 case .equals:    return app.sourceType == criterion.value
                 case .notEquals: return app.sourceType != criterion.value
                 default:         return false
+                }
+
+            case .vendor:
+                let needle = criterion.value.trimmingCharacters(in: .whitespacesAndNewlines)
+                switch criterion.op {
+                case .isNotSet:
+                    return app.vendor == nil
+                case .equals:
+                    guard let vendor = app.vendor else { return false }
+                    return vendor.localizedCaseInsensitiveCompare(needle) == .orderedSame
+                case .notEquals:
+                    guard let vendor = app.vendor else { return true }
+                    return vendor.localizedCaseInsensitiveCompare(needle) != .orderedSame
+                case .contains:
+                    guard let vendor = app.vendor, !needle.isEmpty else { return false }
+                    return vendor.localizedCaseInsensitiveContains(needle)
+                default:
+                    return false
                 }
 
             case .hasUnreadUpdate:

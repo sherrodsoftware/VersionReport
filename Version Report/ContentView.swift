@@ -20,6 +20,7 @@ extension Notification.Name {
 struct MonitoredApp: Identifiable, Equatable {
     let id: String
     let name: String
+    let vendor: String?
     let version: String
     let previousVersion: String
     let sourceType: String
@@ -29,6 +30,10 @@ struct MonitoredApp: Identifiable, Equatable {
     let hasUnreadUpdate: Bool
     let lastCheckError: String?
     let latestReleaseURL: URL?
+
+    var vendorSortValue: String {
+        vendor ?? ""
+    }
 
     var unreadSortValue: Int {
         hasUnreadUpdate ? 1 : 0
@@ -65,6 +70,7 @@ struct ContentView: View {
     @State private var sortOrder = [KeyPathComparator(\MonitoredApp.name)]
     @State private var columnCustomization = TableColumnCustomization<MonitoredApp>()
     @AppStorage("showSourceColumn") private var showSourceColumn = false
+    @AppStorage("showVendorColumn") private var showVendorColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
     @AppStorage("showBuildNumberColumn") private var showBuildNumberColumn = false
     @AppStorage("showAppDetail") private var showAppDetail = false
@@ -295,6 +301,14 @@ struct ContentView: View {
             }
             .width(min: 180, ideal: 220)
             .customizationID("app")
+
+            if showVendorColumn {
+                TableColumn("Vendor", value: \.vendorSortValue) { app in
+                    Text(app.vendor ?? "").foregroundStyle(.secondary).lineLimit(1)
+                }
+                .width(min: 100, ideal: 140)
+                .customizationID("vendor")
+            }
 
             TableColumn("Current Version", value: \.version) { app in
                 Text(app.displayVersion).foregroundStyle(.secondary).lineLimit(1)
@@ -630,6 +644,7 @@ struct ContentView: View {
                 Menu {
                     Toggle("Current Build", isOn: $showBuildNumberColumn)
                     Toggle("Previous Version", isOn: $showPreviousVersionColumn)
+                    Toggle("Vendor", isOn: $showVendorColumn)
                     Toggle("Source", isOn: $showSourceColumn)
                 } label: {
                     Label("Columns", systemImage: "checklist")
