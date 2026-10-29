@@ -102,13 +102,6 @@
     "sourceType": "appstore"
   },
   {
-    "id": "dashboard",
-    "name": "DashBoard",
-    "parserType": "regex",
-    "parserValue": "DashBoard Release Notes v[0-9]+(\\.[0-9]+)+",
-    "versionURL": "https://www.rossvideo.com/support/product-documentation/dashboard/"
-  },
-  {
     "id": "datagrip",
     "name": "DataGrip",
     "sourceType": "homebrew",
