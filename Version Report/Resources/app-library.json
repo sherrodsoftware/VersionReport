@@ -2,18 +2,21 @@
   {
     "id": "adobe_acrobat_reader",
     "name": "Adobe Acrobat Reader",
+    "vendor": "Adobe",
     "sourceType": "homebrew",
     "caskName": "adobe-acrobat-reader"
   },
   {
     "id": "adobe_creative_cloud",
     "name": "Adobe Creative Cloud",
+    "vendor": "Adobe",
     "sourceType": "homebrew",
     "caskName": "adobe-creative-cloud"
   },
   {
     "id": "adobe_photoshop",
     "name": "Adobe Photoshop",
+    "vendor": "Adobe",
     "parserType": "regex",
     "parserValue": "<h2>[^<]*\\(version [0-9]+(\\.[0-9]+)+\\)</h2>",
     "versionURL": "https://helpx.adobe.com/photoshop/desktop/whats-new/photoshop-on-desktop-release-notes.html"
@@ -21,30 +24,35 @@
   {
     "id": "alfred",
     "name": "Alfred",
+    "vendor": "Running with Crayons",
     "sourceType": "homebrew",
     "caskName": "alfred"
   },
   {
     "id": "arc",
     "name": "Arc",
+    "vendor": "The Browser Company",
     "sourceType": "homebrew",
     "caskName": "arc"
   },
   {
     "id": "atlassian_sourcetree",
     "name": "Atlassian SourceTree",
+    "vendor": "Atlassian",
     "sourceType": "homebrew",
     "caskName": "sourcetree"
   },
   {
     "id": "audacity",
     "name": "Audacity",
+    "vendor": "Audacity Team",
     "sourceType": "homebrew",
     "caskName": "audacity"
   },
   {
     "id": "blackmagic_raw_player",
     "name": "Blackmagic RAW Player",
+    "vendor": "Blackmagic Design",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=1435415804&entity=macSoftware",
@@ -53,12 +61,14 @@
   {
     "id": "browserstacklocal",
     "name": "BrowserStackLocal",
+    "vendor": "BrowserStack",
     "sourceType": "homebrew",
     "caskName": "browserstacklocal"
   },
   {
     "id": "catdv_pro",
     "name": "CatDV Pro",
+    "vendor": "Quantum",
     "parserType": "regex",
     "parserValue": "CatDV Pro [0-9]+(\\.[0-9]+)+",
     "versionURL": "https://www.quantum.com/en/service-support/downloads-and-firmware/catdv/"
@@ -66,36 +76,42 @@
   {
     "id": "charles_proxy",
     "name": "Charles Proxy",
+    "vendor": "XK72",
     "sourceType": "homebrew",
     "caskName": "charles"
   },
   {
     "id": "chatgpt",
     "name": "ChatGPT",
+    "vendor": "OpenAI",
     "sourceType": "homebrew",
     "caskName": "chatgpt"
   },
   {
     "id": "chatgpt_classic",
     "name": "ChatGPT Classic",
+    "vendor": "OpenAI",
     "sourceType": "homebrew",
     "caskName": "chatgpt-classic"
   },
   {
     "id": "claude_desktop",
     "name": "Claude Desktop",
+    "vendor": "Anthropic",
     "sourceType": "homebrew",
     "caskName": "claude"
   },
   {
     "id": "colour_contrast_analyser",
     "name": "Colour Contrast Analyser",
+    "vendor": "TPGi",
     "sourceType": "homebrew",
     "caskName": "colour-contrast-analyser"
   },
   {
     "id": "compressor",
     "name": "Compressor",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=6746516157&entity=macSoftware",
@@ -104,12 +120,14 @@
   {
     "id": "datagrip",
     "name": "DataGrip",
+    "vendor": "JetBrains",
     "sourceType": "homebrew",
     "caskName": "datagrip"
   },
   {
     "id": "davinci_resolve",
     "name": "DaVinci Resolve",
+    "vendor": "Blackmagic Design",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=571213070&entity=macSoftware",
@@ -118,6 +136,7 @@
   {
     "id": "davinci_resolve_studio",
     "name": "DaVinci Resolve Studio",
+    "vendor": "Blackmagic Design",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=900392332&entity=macSoftware",
@@ -126,18 +145,21 @@
   {
     "id": "dbeaver_community_edition",
     "name": "DBeaver Community Edition",
+    "vendor": "DBeaver Corp",
     "sourceType": "homebrew",
     "caskName": "dbeaver-community"
   },
   {
     "id": "docker_desktop",
     "name": "Docker Desktop",
+    "vendor": "Docker",
     "sourceType": "homebrew",
     "caskName": "docker-desktop"
   },
   {
     "id": "dji_studio",
     "name": "DJI Studio",
+    "vendor": "DJI",
     "parserType": "regex",
     "parserValue": "\"mac_os\":\\{\"links\":\\[[^\\]]*\\],\"version\":\"v[0-9]+(\\.[0-9]+)+",
     "versionURL": "https://www.dji.com/downloads/softwares/dji-studio"
@@ -145,12 +167,14 @@
   {
     "id": "downie",
     "name": "Downie",
+    "vendor": "Charcoal Design",
     "sourceType": "homebrew",
     "caskName": "downie"
   },
   {
     "id": "editready",
     "name": "EditReady",
+    "vendor": "Hedge",
     "parserType": "regex",
     "parserValue": "EditReady [0-9]+(\\.[0-9]+)+",
     "versionURL": "https://docs.hedge.video/editready/releases"
@@ -158,6 +182,7 @@
   {
     "id": "final_cut_pro",
     "name": "Final Cut Pro",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=424389933&entity=macSoftware",
@@ -166,24 +191,28 @@
   {
     "id": "firefox",
     "name": "Firefox",
+    "vendor": "Mozilla",
     "sourceType": "homebrew",
     "caskName": "firefox"
   },
   {
     "id": "forecast",
     "name": "Forecast",
+    "vendor": "Marco Arment",
     "sourceType": "homebrew",
     "caskName": "forecast"
   },
   {
     "id": "framer",
     "name": "Framer",
+    "vendor": "Framer",
     "sourceType": "homebrew",
     "caskName": "framer"
   },
   {
     "id": "garageband",
     "name": "GarageBand",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=682658836&entity=macSoftware",
@@ -192,48 +221,56 @@
   {
     "id": "gemini",
     "name": "Gemini",
+    "vendor": "Google",
     "sourceType": "homebrew",
     "caskName": "google-gemini"
   },
   {
     "id": "github_desktop",
     "name": "GitHub Desktop",
+    "vendor": "GitHub",
     "sourceType": "homebrew",
     "caskName": "github"
   },
   {
     "id": "google_ads_editor",
     "name": "Google Ads Editor",
+    "vendor": "Google",
     "sourceType": "homebrew",
     "caskName": "google-ads-editor"
   },
   {
     "id": "google_chrome",
     "name": "Google Chrome",
+    "vendor": "Google",
     "sourceType": "homebrew",
     "caskName": "google-chrome"
   },
   {
     "id": "grammarly_desktop",
     "name": "Grammarly Desktop",
+    "vendor": "Grammarly",
     "sourceType": "homebrew",
     "caskName": "grammarly-desktop"
   },
   {
     "id": "granola",
     "name": "Granola",
+    "vendor": "Granola",
     "sourceType": "homebrew",
     "caskName": "granola"
   },
   {
     "id": "handbrake",
     "name": "HandBrake",
+    "vendor": "HandBrake Team",
     "sourceType": "homebrew",
     "caskName": "handbrake-app"
   },
   {
     "id": "imovie",
     "name": "iMovie",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=408981434&entity=macSoftware",
@@ -242,36 +279,42 @@
   {
     "id": "insta360_studio",
     "name": "Insta360 Studio",
+    "vendor": "Insta360",
     "sourceType": "homebrew",
     "caskName": "insta360-studio"
   },
   {
     "id": "intellij_idea_ultimate",
     "name": "IntelliJ IDEA Ultimate",
+    "vendor": "JetBrains",
     "sourceType": "homebrew",
     "caskName": "intellij-idea"
   },
   {
     "id": "iterm",
     "name": "iTerm",
+    "vendor": "George Nachman",
     "sourceType": "homebrew",
     "caskName": "iterm2"
   },
   {
     "id": "jabra_direct",
     "name": "Jabra Direct",
+    "vendor": "Jabra",
     "sourceType": "homebrew",
     "caskName": "jabra-direct"
   },
   {
     "id": "keyboard_maestro",
     "name": "Keyboard Maestro",
+    "vendor": "Stairways Software",
     "sourceType": "homebrew",
     "caskName": "keyboard-maestro"
   },
   {
     "id": "keynote",
     "name": "Keynote",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=361285480&entity=macSoftware",
@@ -280,6 +323,7 @@
   {
     "id": "lastpass_for_desktop",
     "name": "LastPass for Desktop",
+    "vendor": "LastPass",
     "parserType": "regex",
     "parserValue": "Version [0-9]+(\\.[0-9]+)+",
     "versionURL": "https://lastpass.com/misc_download2.php"
@@ -287,12 +331,14 @@
   {
     "id": "leapp",
     "name": "Leapp",
+    "vendor": "Noovolari",
     "sourceType": "homebrew",
     "caskName": "leapp"
   },
   {
     "id": "logic_pro",
     "name": "Logic Pro",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=634148309&entity=macSoftware",
@@ -301,6 +347,7 @@
   {
     "id": "mainstage",
     "name": "MainStage",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=6746637089&entity=macSoftware",
@@ -309,48 +356,56 @@
   {
     "id": "microsoft_edge",
     "name": "Microsoft Edge",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "microsoft-edge"
   },
   {
     "id": "microsoft_excel",
     "name": "Microsoft Excel",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "microsoft-excel"
   },
   {
     "id": "microsoft_onenote",
     "name": "Microsoft OneNote",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "microsoft-onenote"
   },
   {
     "id": "microsoft_outlook",
     "name": "Microsoft Outlook",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "microsoft-outlook"
   },
   {
     "id": "microsoft_powerpoint",
     "name": "Microsoft PowerPoint",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "microsoft-powerpoint"
   },
   {
     "id": "microsoft_teams",
     "name": "Microsoft Teams",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "microsoft-teams"
   },
   {
     "id": "microsoft_word",
     "name": "Microsoft Word",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "microsoft-word"
   },
   {
     "id": "motion",
     "name": "Motion",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=6746637149&entity=macSoftware",
@@ -359,24 +414,28 @@
   {
     "id": "netnewswire",
     "name": "NetNewsWire",
+    "vendor": "Brent Simmons",
     "sourceType": "homebrew",
     "caskName": "netnewswire"
   },
   {
     "id": "notion",
     "name": "Notion",
+    "vendor": "Notion",
     "sourceType": "homebrew",
     "caskName": "notion"
   },
   {
     "id": "nucleo",
     "name": "Nucleo",
+    "vendor": "Nucleo",
     "sourceType": "homebrew",
     "caskName": "nucleo"
   },
   {
     "id": "numbers",
     "name": "Numbers",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=361304891&entity=macSoftware",
@@ -385,24 +444,28 @@
   {
     "id": "obsidian",
     "name": "Obsidian",
+    "vendor": "Obsidian",
     "sourceType": "homebrew",
     "caskName": "obsidian"
   },
   {
     "id": "okta_verify",
     "name": "Okta Verify",
+    "vendor": "Okta",
     "sourceType": "homebrew",
     "caskName": "okta-verify"
   },
   {
     "id": "onedrive",
     "name": "OneDrive",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "onedrive"
   },
   {
     "id": "pages",
     "name": "Pages",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=361309726&entity=macSoftware",
@@ -411,6 +474,7 @@
   {
     "id": "pixelmator_pro",
     "name": "Pixelmator Pro",
+    "vendor": "Pixelmator",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=6746662575&entity=macSoftware",
@@ -419,24 +483,28 @@
   {
     "id": "postman",
     "name": "Postman",
+    "vendor": "Postman",
     "sourceType": "homebrew",
     "caskName": "postman"
   },
   {
     "id": "prezi_video",
     "name": "Prezi Video",
+    "vendor": "Prezi",
     "sourceType": "homebrew",
     "caskName": "prezi-video"
   },
   {
     "id": "privileges",
     "name": "Privileges",
+    "vendor": "SAP",
     "sourceType": "homebrew",
     "caskName": "privileges"
   },
   {
     "id": "pro_tools",
     "name": "Pro Tools",
+    "vendor": "Avid",
     "parserType": "regex",
     "parserValue": "[0-9]{4}\\.[0-9]+",
     "versionURL": "https://kb.avid.com/pkb/articles/en_US/Compatibility/Pro-Tools-Operating-System-Compatibility-Chart"
@@ -444,36 +512,42 @@
   {
     "id": "qfinder_pro",
     "name": "Qfinder Pro",
+    "vendor": "QNAP",
     "sourceType": "homebrew",
     "caskName": "qfinder-pro"
   },
   {
     "id": "qlab",
     "name": "QLab",
+    "vendor": "Figure 53",
     "sourceType": "homebrew",
     "caskName": "qlab"
   },
   {
     "id": "rancher_desktop",
     "name": "Rancher Desktop",
+    "vendor": "SUSE",
     "sourceType": "homebrew",
     "caskName": "rancher"
   },
   {
     "id": "rectangle",
     "name": "Rectangle",
+    "vendor": "Ryan Hanson",
     "sourceType": "homebrew",
     "caskName": "rectangle"
   },
   {
     "id": "rider",
     "name": "Rider",
+    "vendor": "JetBrains",
     "sourceType": "homebrew",
     "caskName": "rider"
   },
   {
     "id": "ringcentral_for_teams_desktop_plugin",
     "name": "RingCentral for Teams Desktop Plugin",
+    "vendor": "RingCentral",
     "versionURL": "https://support.ringcentral.com/us/en/release-notes/integrations/ringcentral-microsoft-teams.html",
     "parserType": "regex",
     "parserValue": "VERSION\\s+(\\d+(?:\\.\\d+)+)"
@@ -481,30 +555,35 @@
   {
     "id": "rstudio_desktop",
     "name": "RStudio Desktop",
+    "vendor": "Posit",
     "sourceType": "homebrew",
     "caskName": "rstudio"
   },
   {
     "id": "rubymine",
     "name": "RubyMine",
+    "vendor": "JetBrains",
     "sourceType": "homebrew",
     "caskName": "rubymine"
   },
   {
     "id": "screaming_frog_seo_spider",
     "name": "Screaming Frog SEO Spider",
+    "vendor": "Screaming Frog",
     "sourceType": "homebrew",
     "caskName": "screaming-frog-seo-spider"
   },
   {
     "id": "snagit",
     "name": "Snagit",
+    "vendor": "TechSmith",
     "sourceType": "homebrew",
     "caskName": "snagit"
   },
   {
     "id": "soundly",
     "name": "Soundly",
+    "vendor": "Soundly",
     "parserType": "regex",
     "parserValue": "\"MacArm\"[^}]*\"Version\"[^0-9]*[0-9]+(\\.[0-9]+)+",
     "versionURL": "https://server2-274265463422.us-central1.run.app/?Type=LatestVersion"
@@ -512,6 +591,7 @@
   {
     "id": "soundq",
     "name": "SoundQ",
+    "vendor": "Pro Sound Effects",
     "parserType": "regex",
     "parserValue": "SoundQ_v[0-9]+(\\.[0-9]+)+\\.pkg",
     "versionURL": "https://www.prosoundeffects.com/soundq"
@@ -519,30 +599,35 @@
   {
     "id": "spotify",
     "name": "Spotify",
+    "vendor": "Spotify",
     "sourceType": "homebrew",
     "caskName": "spotify"
   },
   {
     "id": "tableau_desktop",
     "name": "Tableau Desktop",
+    "vendor": "Salesforce",
     "sourceType": "homebrew",
     "caskName": "tableau"
   },
   {
     "id": "tableau_prep_builder",
     "name": "Tableau Prep Builder",
+    "vendor": "Salesforce",
     "sourceType": "homebrew",
     "caskName": "tableau-prep"
   },
   {
     "id": "textexpander",
     "name": "TextExpander",
+    "vendor": "Smile",
     "sourceType": "homebrew",
     "caskName": "textexpander"
   },
   {
     "id": "tiles_for_zoom",
     "name": "Tiles for Zoom",
+    "vendor": "Liminal",
     "sourceType": "custom",
     "versionURL": "https://www.liminalet.com/tiles-downloads",
     "parserType": "highest_version",
@@ -551,30 +636,35 @@
   {
     "id": "transmit",
     "name": "Transmit",
+    "vendor": "Panic",
     "sourceType": "homebrew",
     "caskName": "transmit"
   },
   {
     "id": "visual_studio_code",
     "name": "Visual Studio Code",
+    "vendor": "Microsoft",
     "sourceType": "homebrew",
     "caskName": "visual-studio-code"
   },
   {
     "id": "vivaldi",
     "name": "Vivaldi",
+    "vendor": "Vivaldi Technologies",
     "sourceType": "homebrew",
     "caskName": "vivaldi"
   },
   {
     "id": "vlc",
     "name": "VLC",
+    "vendor": "VideoLAN",
     "sourceType": "homebrew",
     "caskName": "vlc"
   },
   {
     "id": "xcode",
     "name": "Xcode",
+    "vendor": "Apple",
     "parserType": "jq",
     "parserValue": ".results.0.version",
     "versionURL": "https://itunes.apple.com/lookup?id=497799835&entity=macSoftware",
@@ -583,24 +673,28 @@
   {
     "id": "zoom",
     "name": "Zoom",
+    "vendor": "Zoom",
     "sourceType": "homebrew",
     "caskName": "zoom"
   },
   {
     "id": "boxing_day",
     "name": "Boxing Day",
+    "vendor": "Sherrod Software",
     "sourceType": "github",
     "repoPath": "sherrodsoftware/BoxingDay"
   },
   {
     "id": "bundle_report",
     "name": "Bundle Report",
+    "vendor": "Sherrod Software",
     "sourceType": "github",
     "repoPath": "sherrodsoftware/BundleReport"
   },
   {
     "id": "version_report",
     "name": "Version Report",
+    "vendor": "Sherrod Software",
     "sourceType": "github",
     "repoPath": "sherrodsoftware/VersionReport"
   }
