@@ -239,10 +239,11 @@ final class VersionReportService: ObservableObject {
     @Published var pendingLibraryConflicts: [LibraryConflict] = []
     @Published var groups: [AppGroup] = []
     @Published var smartGroups: [SmartGroup] = []
+    @Published var releaseHistory: [String: [ReleaseHistoryEntry]] = [:]
 
     private var hourlyTimer: Timer?
     private var dockBadgeRefreshObserver: NSObjectProtocol?
-    private let baseURL: URL
+    let baseURL: URL
     private let bundledAppLibraryURL: URL?
 
     init(
@@ -415,6 +416,7 @@ final class VersionReportService: ObservableObject {
         pendingLibraryConflicts = loadPersistedConflicts()
         groups = loadGroups()
         smartGroups = loadSmartGroups()
+        seedReleaseHistoryFromStateIfNeeded()
         reloadApps()
         runVersionCheck()
     }
@@ -833,6 +835,7 @@ final class VersionReportService: ObservableObject {
         var appState = loadAppState()
         appState.removeValue(forKey: id)
         saveAppState(appState)
+        removeReleaseHistory(forAppID: id)
 
         reloadApps()
     }
@@ -1019,7 +1022,7 @@ final class VersionReportService: ObservableObject {
         return "\(parts[0])/\(parts[1])"
     }
 
-    private func iTunesID(from url: URL) -> Int? {
+    func iTunesID(from url: URL) -> Int? {
         // iTunes Lookup API: ?id=12345
         if let id = URLComponents(url: url, resolvingAgainstBaseURL: false)?
             .queryItems?.first(where: { $0.name == "id" })?.value.flatMap(Int.init) {
@@ -1162,6 +1165,8 @@ final class VersionReportService: ObservableObject {
             if !detectedUpdates.isEmpty {
                 await sendTeamsUpdateNotification(for: detectedUpdates)
             }
+
+            await backfillReleaseHistory(for: configs)
 
             let updatedApps = loadMonitoredApps()
             let completionTime = Self.displayTimeFormatter.string(from: Date())
@@ -1332,6 +1337,12 @@ final class VersionReportService: ObservableObject {
         )
 
         saveAppState(appState)
+
+        if didUpdate {
+            recordReleaseHistory([ReleaseHistoryEntry(version: version, date: Date(), kind: .detected)], forAppID: config.id)
+        } else if previousVersion == "Unknown" {
+            recordReleaseHistory([ReleaseHistoryEntry(version: version, date: Date(), kind: .firstSeen)], forAppID: config.id)
+        }
 
         return (previousVersion, didUpdate)
     }

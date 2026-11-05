@@ -4,10 +4,17 @@ import UniformTypeIdentifiers
 struct AppDetailView: View {
 
     let app: MonitoredApp
-    let service: VersionReportService
+    @ObservedObject var service: VersionReportService
     let onEdit: () -> Void
 
     @State private var iconDropTargeted = false
+    @State private var showAllHistory = false
+
+    private static let collapsedHistoryCount = 8
+
+    private var history: [ReleaseHistoryEntry] {
+        service.releaseHistory[app.id] ?? []
+    }
 
     private func formatDate(_ date: Date?) -> String {
         date?.formatted(date: .abbreviated, time: .shortened) ?? "Never"
@@ -126,9 +133,63 @@ struct AppDetailView: View {
                     }
                 }
 
+                if !history.isEmpty {
+                    Divider()
+                    releaseHistorySection
+                }
+
                 Spacer()
             }
             .padding(20)
+        }
+    }
+
+    private var releaseHistorySection: some View {
+        let visible = showAllHistory ? history : Array(history.prefix(Self.collapsedHistoryCount))
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Release History")
+                .font(.headline)
+
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
+                ForEach(visible) { entry in
+                    GridRow {
+                        Text(VersionReportService.marketingVersion(entry.version))
+                            .textSelection(.enabled)
+                        Text(entry.date.formatted(date: .abbreviated, time: .omitted))
+                            .foregroundStyle(.secondary)
+                        historyKindLabel(entry.kind)
+                    }
+                }
+            }
+            .font(.callout)
+
+            if history.count > Self.collapsedHistoryCount {
+                Button(showAllHistory ? "Show Less" : "Show All \(history.count) Releases") {
+                    showAllHistory.toggle()
+                }
+                .buttonStyle(.borderless)
+                .font(.callout)
+            }
+        }
+        .onChange(of: app.id) { _, _ in showAllHistory = false }
+    }
+
+    @ViewBuilder
+    private func historyKindLabel(_ kind: ReleaseHistoryEntry.Kind) -> some View {
+        switch kind {
+        case .released:
+            Text("")
+        case .detected:
+            Text("Detected")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .help("The date Version Report noticed this version. The vendor's release may have been slightly earlier.")
+        case .firstSeen:
+            Text("Tracking began")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .help("This version was current when Version Report started tracking the app.")
         }
     }
 
