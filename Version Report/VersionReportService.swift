@@ -1167,6 +1167,7 @@ final class VersionReportService: ObservableObject {
             }
 
             await backfillReleaseHistory(for: configs)
+            notifyNewlyOverdueApps(configs)
 
             let updatedApps = loadMonitoredApps()
             let completionTime = Self.displayTimeFormatter.string(from: Date())
@@ -1517,7 +1518,8 @@ final class VersionReportService: ObservableObject {
                     iconName: config.id,
                     hasUnreadUpdate: state?.hasUnreadUpdate ?? false,
                     lastCheckError: state?.lastCheckError,
-                    latestReleaseURL: config.source.latestReleaseURL
+                    latestReleaseURL: config.source.latestReleaseURL,
+                    updateCycle: updateCycle(forAppID: config.id)
                 )
             )
 

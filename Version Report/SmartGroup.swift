@@ -16,6 +16,7 @@ enum SmartGroupField: String, Codable, CaseIterable {
     case sourceType = "sourceType"
     case vendor = "vendor"
     case hasUnreadUpdate = "hasUnreadUpdate"
+    case updateCycle = "updateCycle"
     case lastChecked = "lastChecked"
     case lastUpdated = "lastUpdated"
 
@@ -23,6 +24,7 @@ enum SmartGroupField: String, Codable, CaseIterable {
         switch self {
         case .sourceType: return "Source"
         case .vendor: return "Vendor"
+        case .updateCycle: return "Update Cycle"
         case .hasUnreadUpdate: return "Update Status"
         case .lastChecked: return "Last Checked"
         case .lastUpdated: return "Last Updated"
@@ -35,6 +37,9 @@ enum SmartGroupOperator: String, Codable, CaseIterable {
     case notEquals = "notEquals"
     case contains = "contains"
     case isNotSet = "isNotSet"
+    case isOverdue = "isOverdue"
+    case isOnSchedule = "isOnSchedule"
+    case isUnknown = "isUnknown"
     case isTrue = "isTrue"
     case isFalse = "isFalse"
     case lessThanDaysAgo = "lessThanDaysAgo"
@@ -47,6 +52,9 @@ enum SmartGroupOperator: String, Codable, CaseIterable {
         case .notEquals: return "is not"
         case .contains: return "contains"
         case .isNotSet: return "is not set"
+        case .isOverdue: return "is overdue"
+        case .isOnSchedule: return "is on schedule"
+        case .isUnknown: return "is unknown"
         case .isTrue: return "has unread update"
         case .isFalse: return "is up to date"
         case .lessThanDaysAgo: return "within the last (days)"
@@ -99,6 +107,14 @@ struct SmartGroup: Codable, Identifiable {
                     return vendor.localizedCaseInsensitiveContains(needle)
                 default:
                     return false
+                }
+
+            case .updateCycle:
+                switch criterion.op {
+                case .isOverdue:    return app.isOverdue
+                case .isOnSchedule: return app.updateCycle.map { !$0.isOverdue } ?? false
+                case .isUnknown:    return app.updateCycle == nil
+                default:            return false
                 }
 
             case .hasUnreadUpdate:

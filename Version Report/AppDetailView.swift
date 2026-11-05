@@ -103,6 +103,21 @@ struct AppDetailView: View {
                     Divider()
                 }
 
+                if let cycle = app.updateCycle, cycle.isOverdue {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "clock.badge.exclamationmark")
+                            .foregroundStyle(.secondary)
+                        Text("No new version in \(Int(cycle.daysSinceLastRelease)) days, but this app usually updates \(UpdateCycle.describe(days: cycle.typicalDays)). Check that its source is still correct.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+
+                    Divider()
+                }
+
                 VStack(alignment: .leading, spacing: 8) {
                     if let vendor = app.vendor {
                         detailRow("Vendor", value: vendor)
@@ -148,8 +163,16 @@ struct AppDetailView: View {
         let visible = showAllHistory ? history : Array(history.prefix(Self.collapsedHistoryCount))
 
         return VStack(alignment: .leading, spacing: 8) {
-            Text("Release History")
-                .font(.headline)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Release History")
+                    .font(.headline)
+                Spacer()
+                if let cycle = app.updateCycle {
+                    Text("Updates \(UpdateCycle.describe(days: cycle.typicalDays))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
                 ForEach(visible) { entry in

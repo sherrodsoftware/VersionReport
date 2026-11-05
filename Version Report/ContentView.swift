@@ -30,6 +30,11 @@ struct MonitoredApp: Identifiable, Equatable {
     let hasUnreadUpdate: Bool
     let lastCheckError: String?
     let latestReleaseURL: URL?
+    let updateCycle: UpdateCycle?
+
+    var isOverdue: Bool {
+        updateCycle?.isOverdue ?? false
+    }
 
     var vendorSortValue: String {
         vendor ?? ""
@@ -284,6 +289,11 @@ struct ContentView: View {
                         .foregroundStyle(.orange)
                 } else if app.hasUnreadUpdate {
                     Circle().frame(width: 8, height: 8).foregroundStyle(.blue)
+                } else if app.isOverdue {
+                    Image(systemName: "clock.badge.exclamationmark")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .help("Overdue for an update — Version Report may not be tracking this app correctly")
                 }
             }
             .width(16)

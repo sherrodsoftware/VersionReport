@@ -19,6 +19,12 @@ final class VersionReportServiceTests: XCTestCase {
     }
 
     func testLegacyStateMigratesFromDisplayNameToStableID() throws {
+        // The migration runs once per Mac, gated by a flag in the host app's real defaults.
+        let migrationKey = "versionReport.legacyStateMigrationDone"
+        let originalFlag = UserDefaults.standard.object(forKey: migrationKey)
+        UserDefaults.standard.removeObject(forKey: migrationKey)
+        defer { UserDefaults.standard.set(originalFlag, forKey: migrationKey) }
+
         let service = makeService()
         let config = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")
         let state = makeState(version: "26.0")
@@ -61,27 +67,26 @@ final class VersionReportServiceTests: XCTestCase {
         XCTAssertEqual(configsAfterMigration.map(\.id), ["zoom", "zoom_2"])
     }
 
-    func testBundledLibraryMergeMatchesAppsByStableID() throws {
+    func testBundledLibraryMergeKeepsUserEntriesAndAddsNewOnes() throws {
         let bundledURL = testDirectory.appendingPathComponent("bundled-library.json")
-        let bundledConfig = makeConfig(
-            id: "adobe_photoshop",
-            name: "Photoshop"
-        )
+        var bundledPhotoshop = makeConfig(id: "adobe_photoshop", name: "Photoshop")
+        bundledPhotoshop.vendor = "Adobe"
+        let bundledNewApp = makeConfig(id: "new_app", name: "New App")
+        try JSONEncoder().encode([bundledPhotoshop, bundledNewApp]).write(to: bundledURL)
+
+        let userPhotoshop = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")
         let customConfig = makeConfig(id: "custom_tool", name: "Custom Tool")
-        let existingBundledConfig = makeConfig(
-            id: "adobe_photoshop",
-            name: "Adobe Photoshop"
-        )
-        try JSONEncoder().encode([bundledConfig]).write(to: bundledURL)
 
         let service = makeService(bundledLibraryURL: bundledURL)
-        service.saveAppLibrary([existingBundledConfig, customConfig])
+        service.saveAppLibrary([userPhotoshop, customConfig])
         service.mergeBundledAppLibrary()
 
         let library = service.loadAppLibrary()
-        XCTAssertEqual(library.first(where: { $0.id == bundledConfig.id })?.name, "Photoshop")
-        XCTAssertEqual(library.first(where: { $0.id == bundledConfig.id })?.parserValue, ".version")
-        XCTAssertEqual(library.first(where: { $0.id == customConfig.id })?.name, "Custom Tool")
+        let photoshop = library.first(where: { $0.id == "adobe_photoshop" })
+        XCTAssertEqual(photoshop?.name, "Adobe Photoshop", "The user's existing entry is never overwritten")
+        XCTAssertEqual(photoshop?.vendor, "Adobe", "A never-set vendor is backfilled from the bundled library")
+        XCTAssertEqual(library.first(where: { $0.id == "custom_tool" })?.name, "Custom Tool")
+        XCTAssertNotNil(library.first(where: { $0.id == "new_app" }), "New bundled entries are added")
     }
 
     func testParserAndVersionComparisonBehavior() {
@@ -178,5 +183,54 @@ final class VersionReportServiceTests: XCTestCase {
     private func writeState(_ state: [String: AppState]) throws {
         let data = try JSONEncoder().encode(state)
         try data.write(to: testDirectory.appendingPathComponent("app-state.json"))
+    }
+}
+
+
+final class UpdateCycleTests: XCTestCase {
+
+    private let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+    private func history(daysAgo: [Double], kind: ReleaseHistoryEntry.Kind = .released) -> [ReleaseHistoryEntry] {
+        daysAgo.enumerated().map { index, days in
+            ReleaseHistoryEntry(version: "1.\(index)", date: now.addingTimeInterval(-days * 86400), kind: kind)
+        }
+    }
+
+    func testMonthlyAppPastTwoCyclesIsOverdue() throws {
+        let cycle = try XCTUnwrap(UpdateCycle.from(history(daysAgo: [70, 100, 130, 160, 190]), now: now))
+        XCTAssertEqual(cycle.typicalDays, 30, accuracy: 0.01)
+        XCTAssertTrue(cycle.isOverdue)
+    }
+
+    func testMonthlyAppWithinCycleIsOnSchedule() throws {
+        let cycle = try XCTUnwrap(UpdateCycle.from(history(daysAgo: [20, 50, 80, 110, 140]), now: now))
+        XCTAssertFalse(cycle.isOverdue)
+    }
+
+    func testWeeklyAppNotFlaggedBeforeThirtyDays() throws {
+        let weekly = (0..<20).map { Double(25 + $0 * 7) }
+        let cycle = try XCTUnwrap(UpdateCycle.from(history(daysAgo: weekly), now: now))
+        XCTAssertEqual(cycle.typicalDays, 7, accuracy: 0.01)
+        XCTAssertFalse(cycle.isOverdue, "25 days quiet is under the 30-day floor")
+    }
+
+    func testLaunchBurstHasNoCycle() {
+        XCTAssertNil(UpdateCycle.from(history(daysAgo: [15, 16, 17, 18, 19, 20, 21]), now: now))
+    }
+
+    func testTooFewReleasesHasNoCycle() {
+        XCTAssertNil(UpdateCycle.from(history(daysAgo: [10, 100, 200]), now: now))
+    }
+
+    func testFirstSeenDatesAreIgnored() {
+        var entries = history(daysAgo: [70, 100, 130])
+        entries.append(ReleaseHistoryEntry(version: "0.9", date: now.addingTimeInterval(-400 * 86400), kind: .firstSeen))
+        XCTAssertNil(UpdateCycle.from(entries, now: now), "Only three real releases, so no cycle yet")
+    }
+
+    func testOneLongGapDoesNotSkewTypicalCycle() throws {
+        let cycle = try XCTUnwrap(UpdateCycle.from(history(daysAgo: [10, 40, 70, 100, 400]), now: now))
+        XCTAssertEqual(cycle.typicalDays, 30, accuracy: 0.01)
     }
 }

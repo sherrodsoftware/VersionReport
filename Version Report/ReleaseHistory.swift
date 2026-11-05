@@ -1,4 +1,5 @@
 import Foundation
+import UserNotifications
 
 struct ReleaseHistoryEntry: Codable, Equatable, Identifiable {
     enum Kind: String, Codable {
@@ -87,7 +88,104 @@ private final class SparkleHistoryParser: NSObject, XMLParserDelegate {
     }
 }
 
+struct UpdateCycle: Equatable {
+    static let minimumIntervals = 3
+    // A launch burst (several releases in a week) says nothing about the long-run cycle.
+    static let minimumSpanDays = 90.0
+    static let overdueMultiplier = 2.0
+    static let minimumThresholdDays = 30.0
+
+    let typicalDays: Double
+    let daysSinceLastRelease: Double
+    let lastReleaseVersion: String
+
+    var overdueThresholdDays: Double {
+        max(typicalDays * Self.overdueMultiplier, Self.minimumThresholdDays)
+    }
+
+    var isOverdue: Bool {
+        daysSinceLastRelease > overdueThresholdDays
+    }
+
+    // nil until there are enough real release dates to call anything "typical".
+    static func from(_ history: [ReleaseHistoryEntry], now: Date = Date()) -> UpdateCycle? {
+        let dated = history
+            .filter { $0.kind != .firstSeen }
+            .sorted { $0.date < $1.date }
+        guard dated.count > minimumIntervals,
+              let first = dated.first, let last = dated.last,
+              last.date.timeIntervalSince(first.date) / 86400 >= minimumSpanDays else { return nil }
+
+        let intervals = zip(dated, dated.dropFirst())
+            .map { $1.date.timeIntervalSince($0.date) / 86400 }
+            .sorted()
+        let middle = intervals.count / 2
+        let median = intervals.count.isMultiple(of: 2)
+            ? (intervals[middle - 1] + intervals[middle]) / 2
+            : intervals[middle]
+
+        // Same-day bursts (e.g. a hotfix hours after a release) shouldn't make the cycle look like zero days.
+        let typical = max(median, 1)
+
+        return UpdateCycle(
+            typicalDays: typical,
+            daysSinceLastRelease: now.timeIntervalSince(last.date) / 86400,
+            lastReleaseVersion: last.version
+        )
+    }
+
+    static func describe(days: Double) -> String {
+        switch days {
+        case ..<1.5: return "daily"
+        case ..<10: return "about every \(Int(days.rounded())) days"
+        case ..<50: return "about every \(Int((days / 7).rounded())) weeks"
+        default:
+            let months = Int((days / 30.4).rounded())
+            return months == 1 ? "about monthly" : "about every \(months) months"
+        }
+    }
+}
+
 extension VersionReportService {
+
+    private static let overdueNotifiedKey = "versionReport.overdueNotified"
+
+    func updateCycle(forAppID id: String) -> UpdateCycle? {
+        UpdateCycle.from(releaseHistory[id] ?? [])
+    }
+
+    // One notification per app per overdue stretch; a new release re-arms it.
+    func notifyNewlyOverdueApps(_ configs: [AppConfig]) {
+        var notified = UserDefaults.standard.dictionary(forKey: Self.overdueNotifiedKey) as? [String: String] ?? [:]
+        let trackedIDs = Set(configs.map(\.id))
+        notified = notified.filter { trackedIDs.contains($0.key) }
+
+        for config in configs {
+            guard let cycle = updateCycle(forAppID: config.id) else { continue }
+            if !cycle.isOverdue {
+                notified.removeValue(forKey: config.id)
+                continue
+            }
+            guard notified[config.id] != cycle.lastReleaseVersion else { continue }
+
+            sendOverdueNotification(appName: config.name, cycle: cycle)
+            notified[config.id] = cycle.lastReleaseVersion
+        }
+
+        UserDefaults.standard.set(notified, forKey: Self.overdueNotifiedKey)
+    }
+
+    private func sendOverdueNotification(appName: String, cycle: UpdateCycle) {
+        let content = UNMutableNotificationContent()
+        content.title = "\(appName) may not be tracking correctly"
+        content.body = "No new version in \(Int(cycle.daysSinceLastRelease)) days. It usually updates \(UpdateCycle.describe(days: cycle.typicalDays))."
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: "version-report-overdue-\(appName)", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error { print("Failed to send overdue notification: \(error)") }
+        }
+    }
 
     private var releaseHistoryURL: URL {
         baseURL.appendingPathComponent("release-history.json")
