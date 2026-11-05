@@ -1568,10 +1568,23 @@ final class VersionReportService: ObservableObject {
         }
     }
 
+    // Homebrew reports some versions as "version,build"; users only want the version part.
+    static func marketingVersion(_ version: String) -> String {
+        String(version.prefix(while: { $0 != "," }))
+    }
+
+    // When only the build changed, the stripped versions match, so fall back to the full strings.
+    static func notificationVersions(previous: String, current: String) -> (previous: String, current: String) {
+        let previousVersion = marketingVersion(previous)
+        let currentVersion = marketingVersion(current)
+        return previousVersion == currentVersion ? (previous, current) : (previousVersion, currentVersion)
+    }
+
     func sendVersionUpdateNotification(appName: String, previousVersion: String, currentVersion: String) {
+        let versions = Self.notificationVersions(previous: previousVersion, current: currentVersion)
         let content = UNMutableNotificationContent()
         content.title = "Version Report"
-        content.body = "\(appName) updated from \(previousVersion) to \(currentVersion)"
+        content.body = "\(appName) updated from \(versions.previous) to \(versions.current)"
         content.sound = .default
 
         let request = UNNotificationRequest(
@@ -1599,15 +1612,17 @@ final class VersionReportService: ObservableObject {
         let summaryText: String
 
         if let update = updates.first, updates.count == 1 {
-            summaryText = "\(update.appName) version \(update.currentVersion) is now available."
+            let versions = Self.notificationVersions(previous: update.previousVersion, current: update.currentVersion)
+            summaryText = "\(update.appName) version \(versions.current) is now available."
         } else {
             summaryText = "\(updates.count) app updates are now available."
         }
 
         let facts: [[String: String]] = updates.map { update in
-            [
+            let versions = Self.notificationVersions(previous: update.previousVersion, current: update.currentVersion)
+            return [
                 "title": update.appName,
-                "value": "\(update.previousVersion) → \(update.currentVersion)"
+                "value": "\(versions.previous) → \(versions.current)"
             ]
         }
 

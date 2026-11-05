@@ -48,11 +48,11 @@ struct MonitoredApp: Identifiable, Equatable {
     }
 
     var displayVersion: String {
-        String(version.prefix(while: { $0 != "," }))
+        VersionReportService.marketingVersion(version)
     }
 
     var displayPreviousVersion: String {
-        String(previousVersion.prefix(while: { $0 != "," }))
+        VersionReportService.marketingVersion(previousVersion)
     }
 
     var buildNumber: String? {
@@ -196,7 +196,7 @@ struct ContentView: View {
 
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(selectedApp.version, forType: .string)
+        pasteboard.setString(selectedApp.displayVersion, forType: .string)
     }
 
     private func markSelectedUpdatesAsRead() {
