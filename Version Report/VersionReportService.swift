@@ -483,6 +483,27 @@ final class VersionReportService: ObservableObject {
         }
     }
 
+    /// The library as offered by Add from Library: entries that ship in the bundled
+    /// library always use the bundled definition, so re-adding an app picks up the
+    /// latest lookup. User-only entries come from the local library unchanged.
+    /// Read-only: the local library file is never modified here.
+    func loadAppLibraryForAdding() -> [AppConfig] {
+        let localConfigs = loadAppLibrary()
+
+        guard let bundledLibraryURL = bundledAppLibraryURL,
+              let bundledData = try? Data(contentsOf: bundledLibraryURL),
+              let bundledConfigs = try? JSONDecoder().decode([AppConfig].self, from: bundledData) else {
+            return localConfigs
+        }
+
+        let bundledByID = Dictionary(
+            normalizeIDs(in: bundledConfigs).map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        return localConfigs.map { bundledByID[$0.id] ?? $0 }
+    }
+
     func saveAppLibrary(_ configs: [AppConfig]) {
 
         let encoder = JSONEncoder()

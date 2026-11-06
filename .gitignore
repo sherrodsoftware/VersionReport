@@ -9,3 +9,5 @@ RELEASE_CHECKLIST.md
 docs/
 *.pkg
 *.app
+dist/
+

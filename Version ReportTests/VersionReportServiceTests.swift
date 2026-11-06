@@ -89,6 +89,25 @@ final class VersionReportServiceTests: XCTestCase {
         XCTAssertNotNil(library.first(where: { $0.id == "new_app" }), "New bundled entries are added")
     }
 
+    func testAddFromLibraryUsesBundledDefinitionWithoutTouchingLocalLibrary() throws {
+        let bundledURL = testDirectory.appendingPathComponent("bundled-library.json")
+        let bundledSoundQ = makeConfig(id: "soundq", name: "SoundQ", parserValue: ".version")
+        try JSONEncoder().encode([bundledSoundQ]).write(to: bundledURL)
+
+        let staleSoundQ = makeConfig(id: "soundq", name: "SoundQ", parserValue: ".old")
+        let customConfig = makeConfig(id: "custom_tool", name: "Custom Tool", parserValue: ".mine")
+
+        let service = makeService(bundledLibraryURL: bundledURL)
+        service.saveAppLibrary([staleSoundQ, customConfig])
+
+        let offered = service.loadAppLibraryForAdding()
+        XCTAssertEqual(offered.first(where: { $0.id == "soundq" }), bundledSoundQ)
+        XCTAssertEqual(offered.first(where: { $0.id == "custom_tool" }), customConfig)
+
+        let local = service.loadAppLibrary()
+        XCTAssertEqual(local.first(where: { $0.id == "soundq" }), staleSoundQ, "The local library file is not modified")
+    }
+
     func testParserAndVersionComparisonBehavior() {
         let service = makeService()
 

@@ -147,7 +147,7 @@ struct ContentView: View {
 
     private func loadCachedLibraryApps() {
         let monitoredAppNames = Set(service.loadAppConfigs().map { $0.name })
-        cachedLibraryApps = service.loadAppLibrary().filter { !monitoredAppNames.contains($0.name) }
+        cachedLibraryApps = service.loadAppLibraryForAdding().filter { !monitoredAppNames.contains($0.name) }
     }
 
     private func formatDate(_ date: Date?) -> String {
