@@ -75,6 +75,11 @@ struct Version_ReportApp: App {
                     ])
                 }
             }
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") {
+                    updaterController.checkForUpdates(nil)
+                }
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Group") {
                     uiState.onNewGroupRequested()
@@ -122,7 +127,7 @@ struct Version_ReportApp: App {
                 .disabled(uiState.selectedAppIDs.isEmpty)
 
                 Divider()
-                Button("Check for Updates…") {
+                Button("Check Versions Now") {
                     NotificationCenter.default.post(name: .versionReportCheckNow, object: nil)
                 }
                 .keyboardShortcut("r", modifiers: [.command])
@@ -139,10 +144,6 @@ struct Version_ReportApp: App {
             }
 
             CommandGroup(replacing: .help) {
-                Button("Check for Updates…") {
-                    updaterController.checkForUpdates(nil)
-                }
-                Divider()
                 Button("Version Report Help") {
                     NSWorkspace.shared.open(URL(string: "https://github.com/sherrodsoftware/VersionReport")!)
                 }

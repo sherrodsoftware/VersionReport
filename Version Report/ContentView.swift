@@ -649,10 +649,10 @@ struct ContentView: View {
                 Button {
                     service.runVersionCheck()
                 } label: {
-                    Label("Check for Updates", systemImage: "arrow.clockwise")
+                    Label("Check Versions Now", systemImage: "arrow.clockwise")
                 }
                 .disabled(service.isChecking)
-                .help("Check for Updates")
+                .help("Check monitored apps for new versions")
             }
             ToolbarItem(placement: .automatic) {
                 Menu {
