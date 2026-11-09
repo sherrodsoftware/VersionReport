@@ -717,6 +717,13 @@
     "repoPath": "sherrodsoftware/BundleReport"
   },
   {
+    "id": "os_report",
+    "name": "OS Report",
+    "vendor": "Sherrod Software",
+    "sourceType": "github",
+    "repoPath": "sherrodsoftware/OSReport"
+  },
+  {
     "id": "version_report",
     "name": "Version Report",
     "vendor": "Sherrod Software",
