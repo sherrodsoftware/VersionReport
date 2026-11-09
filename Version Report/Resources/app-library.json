@@ -724,6 +724,13 @@
     "repoPath": "sherrodsoftware/OSReport"
   },
   {
+    "id": "opencode",
+    "name": "OpenCode",
+    "vendor": "Anomaly Innovations",
+    "sourceType": "homebrew",
+    "caskName": "opencode-desktop"
+  },
+  {
     "id": "version_report",
     "name": "Version Report",
     "vendor": "Sherrod Software",
