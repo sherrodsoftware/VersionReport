@@ -53,6 +53,8 @@ The app ships with a curated library of common macOS apps maintained by the deve
 
 **Library vs. your apps:** The built-in library is the pool of apps you *can* add — it doesn't automatically add anything to your list. Apps you've already added manually won't be overwritten if the same app appears in the library. If there's ever a conflict, Version Report will let you know and give you the choice of which version to keep.
 
+See **[LIBRARY.md](LIBRARY.md)** for the full list of apps in the built-in library.
+
 To add your own app to the library (so you can reuse its config across machines), select it in the list and choose **File → Add Selected App to Library**.
 
 ---

@@ -253,3 +253,40 @@ final class UpdateCycleTests: XCTestCase {
         XCTAssertEqual(cycle.typicalDays, 30, accuracy: 0.01)
     }
 }
+
+
+final class LibraryDocumentationTests: XCTestCase {
+
+    /// LIBRARY.md is generated from the bundled library. If this fails, run
+    /// `python3 scripts/generate-library-md.py` and commit the result.
+    func testLibraryMarkdownListsEveryBundledApp() throws {
+        let repoRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let libraryURL = repoRoot.appendingPathComponent("Version Report/Resources/app-library.json")
+        let markdownURL = repoRoot.appendingPathComponent("LIBRARY.md")
+
+        let configs = try JSONDecoder().decode([AppConfig].self, from: Data(contentsOf: libraryURL))
+        let markdown = try String(contentsOf: markdownURL, encoding: .utf8)
+
+        let documentedNames = markdown
+            .split(separator: "\n")
+            .filter { $0.hasPrefix("| ") && !$0.hasPrefix("| App |") }
+            .compactMap { line in
+                line.dropFirst(2)
+                    .components(separatedBy: " | ")
+                    .first?
+                    .replacingOccurrences(of: "\\|", with: "|")
+            }
+
+        XCTAssertEqual(
+            documentedNames.sorted(),
+            configs.map(\.name).sorted(),
+            "LIBRARY.md is out of date. Run: python3 scripts/generate-library-md.py"
+        )
+        XCTAssertTrue(
+            markdown.contains("**\(configs.count) apps**"),
+            "LIBRARY.md app count is out of date. Run: python3 scripts/generate-library-md.py"
+        )
+    }
+}
