@@ -731,6 +731,13 @@
     "caskName": "opencode-desktop"
   },
   {
+    "id": "figma",
+    "name": "Figma",
+    "vendor": "Figma",
+    "sourceType": "homebrew",
+    "caskName": "figma"
+  },
+  {
     "id": "version_report",
     "name": "Version Report",
     "vendor": "Sherrod Software",
