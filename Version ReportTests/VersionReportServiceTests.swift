@@ -108,6 +108,42 @@ final class VersionReportServiceTests: XCTestCase {
         XCTAssertEqual(local.first(where: { $0.id == "soundq" }), staleSoundQ, "The local library file is not modified")
     }
 
+    func testBundledIconMergeNeverOverwritesCustomIcons() throws {
+        let bundledIcons = testDirectory.appendingPathComponent("bundled-icons")
+        let userIcons = testDirectory.appendingPathComponent("icons")
+        try FileManager.default.createDirectory(at: bundledIcons, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: userIcons, withIntermediateDirectories: true)
+
+        func write(_ text: String, _ url: URL) throws { try Data(text.utf8).write(to: url) }
+        func read(_ name: String) throws -> String {
+            try String(contentsOf: userIcons.appendingPathComponent(name), encoding: .utf8)
+        }
+
+        try write("bundled-v1", bundledIcons.appendingPathComponent("untouched.png"))
+        try write("bundled-v1", bundledIcons.appendingPathComponent("custom.png"))
+        try write("bundled-v1", bundledIcons.appendingPathComponent("legacy.png"))
+        try write("bundled-v1", bundledIcons.appendingPathComponent("missing.png"))
+        try write("user-made", userIcons.appendingPathComponent("legacy.png"))
+
+        let service = VersionReportService(baseURL: testDirectory, bundledAppLibraryURL: nil, bundledIconsURL: bundledIcons)
+        service.mergeBundledIcons()
+
+        XCTAssertEqual(try read("missing.png"), "bundled-v1", "Missing icons are copied")
+        XCTAssertEqual(try read("legacy.png"), "user-made", "An unrecorded local icon is treated as custom")
+
+        // The user customizes one icon, then a new build ships updated bundled icons.
+        try write("user-made", userIcons.appendingPathComponent("custom.png"))
+        for name in ["untouched.png", "custom.png", "legacy.png", "missing.png"] {
+            try write("bundled-v2", bundledIcons.appendingPathComponent(name))
+        }
+        service.mergeBundledIcons()
+
+        XCTAssertEqual(try read("untouched.png"), "bundled-v2", "Untouched bundled copies get updates")
+        XCTAssertEqual(try read("missing.png"), "bundled-v2")
+        XCTAssertEqual(try read("custom.png"), "user-made", "Custom icons are never overwritten")
+        XCTAssertEqual(try read("legacy.png"), "user-made")
+    }
+
     func testParserAndVersionComparisonBehavior() {
         let service = makeService()
 

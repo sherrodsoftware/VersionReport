@@ -3,6 +3,7 @@ import AppKit
 import UserNotifications
 import UniformTypeIdentifiers
 import Combine
+import CryptoKit
 
 enum CheckFrequency: String, CaseIterable {
     case onLaunch = "onLaunch"
@@ -245,16 +246,22 @@ final class VersionReportService: ObservableObject {
     private var dockBadgeRefreshObserver: NSObjectProtocol?
     let baseURL: URL
     private let bundledAppLibraryURL: URL?
+    private let bundledIconsURL: URL?
 
     init(
         baseURL: URL = versionReportBaseURL,
         bundledAppLibraryURL: URL? = Bundle.main.url(
             forResource: "app-library",
             withExtension: "json"
+        ),
+        bundledIconsURL: URL? = Bundle.main.url(
+            forResource: "icons",
+            withExtension: nil
         )
     ) {
         self.baseURL = baseURL
         self.bundledAppLibraryURL = bundledAppLibraryURL
+        self.bundledIconsURL = bundledIconsURL
         dockBadgeRefreshObserver = NotificationCenter.default.addObserver(
             forName: .versionReportRefreshDockBadge,
             object: nil,
@@ -680,10 +687,7 @@ final class VersionReportService: ObservableObject {
             return
         }
 
-        if let bundledIconsURL = Bundle.main.url(
-            forResource: "icons",
-            withExtension: nil
-        ) {
+        if let bundledIconsURL {
             try? fileManager.copyItem(
                 at: bundledIconsURL,
                 to: iconsURL
@@ -696,46 +700,89 @@ final class VersionReportService: ObservableObject {
         }
     }
 
+    /// Copies bundled icons into the local icons folder without ever overwriting
+    /// an icon the user chose. A bundled icon is copied when no local icon exists,
+    /// or when the local icon is still exactly the bundled copy placed there
+    /// earlier (tracked by fingerprint in bundled-icons.json), so updated bundled
+    /// icons still reach users who never customized them.
     func mergeBundledIcons() {
 
         let fileManager = FileManager.default
 
-        guard let bundledIconsURL = Bundle.main.url(
-            forResource: "icons",
-            withExtension: nil
-        ) else {
+        guard let bundledIconsURL,
+              let bundledIconFiles = try? fileManager.contentsOfDirectory(
+                at: bundledIconsURL,
+                includingPropertiesForKeys: nil
+              ) else {
             return
         }
 
         let userIconsURL = baseURL.appendingPathComponent("icons")
+        try? fileManager.createDirectory(at: userIconsURL, withIntermediateDirectories: true)
 
-        try? fileManager.createDirectory(
-            at: userIconsURL,
-            withIntermediateDirectories: true
-        )
+        var manifest = loadBundledIconManifest()
+        var didChangeManifest = false
 
-        guard let bundledIconFiles = try? fileManager.contentsOfDirectory(
-            at: bundledIconsURL,
-            includingPropertiesForKeys: nil
-        ) else {
-            return
-        }
+        for bundledIconFile in bundledIconFiles where bundledIconFile.pathExtension == "png" {
 
-        for bundledIconFile in bundledIconFiles {
+            let name = bundledIconFile.lastPathComponent
+            let destinationURL = userIconsURL.appendingPathComponent(name)
 
-            let destinationURL = userIconsURL.appendingPathComponent(
-                bundledIconFile.lastPathComponent
-            )
+            guard let bundledHash = Self.fileFingerprint(bundledIconFile) else { continue }
 
-            if fileManager.fileExists(atPath: destinationURL.path) {
-                try? fileManager.removeItem(at: destinationURL)
+            let shouldCopy: Bool
+            if let localHash = Self.fileFingerprint(destinationURL) {
+                if localHash == bundledHash {
+                    // Already current. Record it so future bundled updates can replace it.
+                    if manifest[name] != bundledHash {
+                        manifest[name] = bundledHash
+                        didChangeManifest = true
+                    }
+                    shouldCopy = false
+                } else {
+                    // Replace only an untouched copy of an earlier bundled icon.
+                    shouldCopy = manifest[name] == localHash
+                }
+            } else {
+                shouldCopy = true
             }
 
-            try? fileManager.copyItem(
-                at: bundledIconFile,
-                to: destinationURL
-            )
+            guard shouldCopy else { continue }
+
+            try? fileManager.removeItem(at: destinationURL)
+            if (try? fileManager.copyItem(at: bundledIconFile, to: destinationURL)) != nil {
+                manifest[name] = bundledHash
+                didChangeManifest = true
+            }
         }
+
+        if didChangeManifest {
+            saveBundledIconManifest(manifest)
+        }
+    }
+
+    private var bundledIconManifestURL: URL {
+        baseURL.appendingPathComponent("bundled-icons.json")
+    }
+
+    private func loadBundledIconManifest() -> [String: String] {
+        guard let data = try? Data(contentsOf: bundledIconManifestURL),
+              let manifest = try? JSONDecoder().decode([String: String].self, from: data) else {
+            return [:]
+        }
+        return manifest
+    }
+
+    private func saveBundledIconManifest(_ manifest: [String: String]) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? encoder.encode(manifest) else { return }
+        try? data.write(to: bundledIconManifestURL, options: .atomic)
+    }
+
+    static func fileFingerprint(_ url: URL) -> String? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     func addAppConfig(_ config: AppConfig) {
