@@ -1510,21 +1510,24 @@ final class VersionReportService: ObservableObject {
         return versions.sorted(by: compareVersions).last
     }
 
+    /// Pulls the version out of a regex match. A dotted version (1.2.3) is
+    /// preferred; a whole number (27) is used only when the match contains no
+    /// dotted version, so stray digits such as the 2 in "<h2>" never win.
     func extractVersionNumber(from text: String) -> String? {
-        let versionPattern = #"[0-9]+(\.[0-9]+)+"#
+        for versionPattern in [#"[0-9]+(\.[0-9]+)+"#, #"[0-9]+"#] {
+            guard let regex = try? NSRegularExpression(pattern: versionPattern) else {
+                continue
+            }
 
-        guard let regex = try? NSRegularExpression(pattern: versionPattern) else {
-            return nil
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+
+            if let match = regex.firstMatch(in: text, range: range),
+               let matchRange = Range(match.range, in: text) {
+                return String(text[matchRange])
+            }
         }
 
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-
-        guard let match = regex.firstMatch(in: text, range: range),
-              let matchRange = Range(match.range, in: text) else {
-            return nil
-        }
-
-        return String(text[matchRange])
+        return nil
     }
 
     func compareVersions(_ left: String, _ right: String) -> Bool {

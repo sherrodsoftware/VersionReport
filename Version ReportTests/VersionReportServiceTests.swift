@@ -165,6 +165,26 @@ final class VersionReportServiceTests: XCTestCase {
         XCTAssertFalse(service.compareVersions("2.10.0", "2.9.0"))
     }
 
+    func testWholeNumberVersionsAreExtractedWithoutBreakingDottedOnes() {
+        let service = makeService()
+
+        XCTAssertEqual(
+            service.highestRegexVersionMatch(
+                in: "atom-premiere_1.1.13_mac-arm64.zip atom-premiere_26_mac-arm64.zip atom-premiere_27_mac-x64.zip",
+                pattern: "atom-premiere_[0-9]+(\\.[0-9]+)*_mac"
+            ),
+            "27"
+        )
+        XCTAssertEqual(
+            service.firstRegexVersionMatch(
+                in: "<h2>November 2026 (version 28.0)</h2>",
+                pattern: "<h2>[^<]*\\(version [0-9]+(\\.[0-9]+)+\\)</h2>"
+            ),
+            "28.0",
+            "A dotted version still wins over stray digits in the match"
+        )
+    }
+
     func testMarkingAnUpdateAsReadUpdatesTheVisibleUnreadCount() {
         let service = makeService()
         let config = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")
