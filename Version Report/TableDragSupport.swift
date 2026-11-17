@@ -42,6 +42,14 @@ final class TableDragCoordinator: NSObject, NSDraggingSource {
     // MARK: - Event handling
 
     private func handle(_ event: NSEvent, in window: NSWindow) {
+        // The monitor sees mouse events app-wide. Ignore anything outside the main
+        // window, and anything while a sheet is open: a drag inside the Edit App
+        // sheet would otherwise start dragging the table row hidden beneath it.
+        guard event.window === window, window.attachedSheet == nil else {
+            sessionActive = false
+            mouseDownRow = -1
+            return
+        }
         guard let tv = resolvedTableView(in: window) else { return }
         let pt = tv.convert(event.locationInWindow, from: nil)
 
