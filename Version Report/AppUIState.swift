@@ -8,6 +8,10 @@ final class AppUIState: ObservableObject {
     @Published var showingDeleteConfirmation = false
     @Published var showingLibrarySheet = false
     @Published var showingLibraryConflictsSheet = false
+    @Published var installedAppSuggestions: [InstalledAppSuggestion] = []
+    @Published var showingInstalledAppsSheet = false
+    /// True when opened from the File menu rather than the launch prompt.
+    @Published var installedAppsSheetIsManual = false
 
     var onEditRequested: () -> Void = {}
     var onDeleteRequested: () -> Void = {}
@@ -17,4 +21,5 @@ final class AppUIState: ObservableObject {
     var onNewGroupRequested: () -> Void = {}
     var onNewGroupFromSelectionRequested: () -> Void = {}
     var onNewSmartGroupRequested: () -> Void = {}
+    var onFindInstalledAppsRequested: () -> Void = {}
 }

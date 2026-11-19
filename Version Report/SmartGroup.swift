@@ -17,6 +17,7 @@ enum SmartGroupField: String, Codable, CaseIterable {
     case vendor = "vendor"
     case hasUnreadUpdate = "hasUnreadUpdate"
     case updateCycle = "updateCycle"
+    case installedVersion = "installedVersion"
     case lastChecked = "lastChecked"
     case lastUpdated = "lastUpdated"
 
@@ -25,6 +26,7 @@ enum SmartGroupField: String, Codable, CaseIterable {
         case .sourceType: return "Source"
         case .vendor: return "Vendor"
         case .updateCycle: return "Update Cycle"
+        case .installedVersion: return "Installed Version"
         case .hasUnreadUpdate: return "Update Status"
         case .lastChecked: return "Last Checked"
         case .lastUpdated: return "Last Updated"
@@ -40,6 +42,10 @@ enum SmartGroupOperator: String, Codable, CaseIterable {
     case isOverdue = "isOverdue"
     case isOnSchedule = "isOnSchedule"
     case isUnknown = "isUnknown"
+    case installedIsOutdated = "installedIsOutdated"
+    case installedIsCurrent = "installedIsCurrent"
+    case isInstalled = "isInstalled"
+    case isNotInstalled = "isNotInstalled"
     case isTrue = "isTrue"
     case isFalse = "isFalse"
     case lessThanDaysAgo = "lessThanDaysAgo"
@@ -55,6 +61,10 @@ enum SmartGroupOperator: String, Codable, CaseIterable {
         case .isOverdue: return "is overdue"
         case .isOnSchedule: return "is on schedule"
         case .isUnknown: return "is unknown"
+        case .installedIsOutdated: return "is out of date"
+        case .installedIsCurrent: return "is current"
+        case .isInstalled: return "is installed"
+        case .isNotInstalled: return "is not installed"
         case .isTrue: return "has unread update"
         case .isFalse: return "is up to date"
         case .lessThanDaysAgo: return "within the last (days)"
@@ -115,6 +125,15 @@ struct SmartGroup: Codable, Identifiable {
                 case .isOnSchedule: return app.updateCycle.map { !$0.isOverdue } ?? false
                 case .isUnknown:    return app.updateCycle == nil
                 default:            return false
+                }
+
+            case .installedVersion:
+                switch criterion.op {
+                case .installedIsOutdated: return app.installStatus == .outdated
+                case .installedIsCurrent:  return app.installStatus == .upToDate
+                case .isInstalled:         return app.installed != nil
+                case .isNotInstalled:      return app.installed == nil
+                default:                   return false
                 }
 
             case .hasUnreadUpdate:

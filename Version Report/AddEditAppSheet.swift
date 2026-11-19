@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 private struct AppStoreResult: Identifiable {
     let id: Int
@@ -7,6 +8,7 @@ private struct AppStoreResult: Identifiable {
     let iconURL: URL?
     let storeURL: URL
     let version: String
+    var bundleID: String? = nil
 }
 
 struct AddEditAppSheet: View {
@@ -17,11 +19,20 @@ struct AddEditAppSheet: View {
     @State private var appName = ""
     @State private var vendor = ""
     @State private var originalVendor: String?
+    @State private var bundleID = ""
+    @State private var originalBundleID: String?
 
     private var resolvedVendor: String? {
         let trimmed = vendor.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { return trimmed }
         return originalVendor == nil ? nil : ""
+    }
+
+    // nil lets Version Report fill it in; "" records that the user cleared it.
+    private var resolvedBundleID: String? {
+        let trimmed = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        return originalBundleID == nil ? nil : ""
     }
     @State private var sourceType = "appstore"
     @State private var caskName = ""
@@ -51,6 +62,16 @@ struct AddEditAppSheet: View {
             TextField("App Name", text: $appName)
 
             TextField("Vendor (optional)", text: $vendor)
+
+            HStack {
+                TextField("Bundle ID (optional)", text: $bundleID)
+                    .help("Used to find the installed copy of this app, e.g. com.figma.Desktop")
+
+                Button("Choose App…") {
+                    chooseInstalledApp()
+                }
+                .help("Fill in the bundle ID from an app installed on this Mac")
+            }
 
             Picker("Source", selection: $sourceType) {
                 Text("App Store").tag("appstore")
@@ -300,6 +321,7 @@ struct AddEditAppSheet: View {
                             selectedAppStoreResult = result
                             appName = result.name
                             if vendor.isEmpty { vendor = result.developer }
+                            if bundleID.isEmpty, let resultBundleID = result.bundleID { bundleID = resultBundleID }
                         }
                         Divider().padding(.leading, 44)
                     }
@@ -381,8 +403,28 @@ struct AddEditAppSheet: View {
                 developer: developer,
                 iconURL: iconURL,
                 storeURL: storeURL,
-                version: version
+                version: version,
+                bundleID: item["bundleId"] as? String
             )
+        }
+    }
+
+    private func chooseInstalledApp() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose an App"
+        panel.prompt = "Choose"
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        if let info = InstalledApps.readInfo(at: url), let chosenBundleID = info.bundleID {
+            bundleID = chosenBundleID
+        }
+        if appName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            appName = url.deletingPathExtension().lastPathComponent
         }
     }
 
@@ -401,6 +443,8 @@ struct AddEditAppSheet: View {
             appName = ""
             vendor = ""
             originalVendor = nil
+            bundleID = ""
+            originalBundleID = nil
             sourceType = "appstore"
             caskName = ""
             sparkleURL = ""
@@ -418,6 +462,8 @@ struct AddEditAppSheet: View {
         appName = config.name
         vendor = config.vendor ?? ""
         originalVendor = config.vendor
+        bundleID = config.bundleID ?? ""
+        originalBundleID = config.bundleID
         switch config.source {
         case .homebrew(let name):
             sourceType = "homebrew"
@@ -506,7 +552,8 @@ struct AddEditAppSheet: View {
         let config = AppConfig(
             name: appName,
             source: source,
-            vendor: resolvedVendor
+            vendor: resolvedVendor,
+            bundleID: resolvedBundleID
         )
 
         // Download and save App Store icon at add/edit time.

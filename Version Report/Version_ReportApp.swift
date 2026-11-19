@@ -41,6 +41,7 @@ struct Version_ReportApp: App {
     @NSApplicationDelegateAdaptor(VersionReportAppDelegate.self) private var appDelegate
     @AppStorage("showSourceColumn") private var showSourceColumn = false
     @AppStorage("showVendorColumn") private var showVendorColumn = false
+    @AppStorage("showInstalledVersionColumn") private var showInstalledVersionColumn = false
     @AppStorage("showBuildNumberColumn") private var showBuildNumberColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
 
@@ -109,6 +110,10 @@ struct Version_ReportApp: App {
                 }
                 .keyboardShortcut("l", modifiers: [.command, .option])
 
+                Button("Add Installed Apps…") {
+                    uiState.onFindInstalledAppsRequested()
+                }
+
                 Button("Edit Selected App…") {
                     uiState.onEditRequested()
                 }
@@ -162,6 +167,7 @@ struct Version_ReportApp: App {
                 .disabled(!service.apps.contains { uiState.selectedAppIDs.contains($0.id) && !$0.hasUnreadUpdate })
 
                 Divider()
+                Toggle("Show Installed Version Column", isOn: $showInstalledVersionColumn)
                 Toggle("Show Previous Version Column", isOn: $showPreviousVersionColumn)
                 Toggle("Show Current Build Column", isOn: $showBuildNumberColumn)
                 Toggle("Show Vendor Column", isOn: $showVendorColumn)

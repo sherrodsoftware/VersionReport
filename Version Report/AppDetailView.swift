@@ -125,6 +125,8 @@ struct AppDetailView: View {
 
                     detailRow("Current Version", value: app.displayVersion)
 
+                    installedVersionRow
+
                     if let build = app.buildNumber {
                         detailRow("Build Number", value: build)
                     }
@@ -213,6 +215,33 @@ struct AppDetailView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .help("This version was current when Version Report started tracking the app.")
+        }
+    }
+
+    @ViewBuilder
+    private var installedVersionRow: some View {
+        let installedVersion = app.installed.map { VersionReportService.marketingVersion($0.version) }
+
+        switch app.installStatus {
+        case .notTracked:
+            EmptyView()
+        case .notInstalled:
+            detailRow("Installed Version", value: "Not installed on this Mac")
+        case .outdated:
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Installed Version")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 130, alignment: .trailing)
+                Text(installedVersion ?? "")
+                    .textSelection(.enabled)
+                Label("Update available", systemImage: "arrow.up.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+            .help(app.installed?.url.path ?? "")
+        case .upToDate, .unknown:
+            detailRow("Installed Version", value: installedVersion ?? "")
+                .help(app.installed?.url.path ?? "")
         }
     }
 

@@ -31,6 +31,16 @@ struct MonitoredApp: Identifiable, Equatable {
     let lastCheckError: String?
     let latestReleaseURL: URL?
     let updateCycle: UpdateCycle?
+    var installed: InstalledAppInfo? = nil
+    var tracksInstall: Bool = false
+
+    var installStatus: InstallStatus {
+        InstalledApps.status(installed: installed, available: version, tracksInstall: tracksInstall)
+    }
+
+    var installedVersionSortValue: String {
+        installed?.version ?? ""
+    }
 
     var isOverdue: Bool {
         updateCycle?.isOverdue ?? false
@@ -78,6 +88,7 @@ struct ContentView: View {
     private static let columnCustomizationKey = "columnCustomization.v2"
     @AppStorage("showSourceColumn") private var showSourceColumn = false
     @AppStorage("showVendorColumn") private var showVendorColumn = false
+    @AppStorage("showInstalledVersionColumn") private var showInstalledVersionColumn = false
     @AppStorage("showPreviousVersionColumn") private var showPreviousVersionColumn = false
     @AppStorage("showBuildNumberColumn") private var showBuildNumberColumn = false
     @AppStorage("showAppDetail") private var showAppDetail = false
@@ -143,6 +154,24 @@ struct ContentView: View {
         } else {
             sortOrder = [KeyPathComparator(\MonitoredApp.name)]
         }
+    }
+
+    private func presentInstalledApps(manual: Bool) {
+        let suggestions = service.installedAppSuggestions(excludingOffered: !manual)
+
+        if suggestions.isEmpty {
+            if manual { service.statusMessage = "All installed apps from the built-in library are already tracked." }
+            return
+        }
+
+        // At launch, never stack on top of a sheet the user already opened.
+        if !manual && (uiState.showingAddAppSheet || uiState.showingLibrarySheet || uiState.showingLibraryConflictsSheet) {
+            return
+        }
+
+        uiState.installedAppSuggestions = suggestions
+        uiState.installedAppsSheetIsManual = manual
+        uiState.showingInstalledAppsSheet = true
     }
 
     private func loadCachedLibraryApps() {
@@ -330,6 +359,14 @@ struct ContentView: View {
             .width(min: 90, ideal: 110)
             .customizationID("currentVersion")
 
+            if showInstalledVersionColumn {
+                TableColumn("Installed Version", value: \.installedVersionSortValue) { app in
+                    InstalledVersionCell(app: app)
+                }
+                .width(min: 100, ideal: 120)
+                .customizationID("installedVersion")
+            }
+
             if showBuildNumberColumn {
                 TableColumn("Current Build", value: \.version) { app in
                     Text(app.buildNumber ?? "—").foregroundStyle(.secondary).lineLimit(1)
@@ -354,17 +391,20 @@ struct ContentView: View {
                 .customizationID("source")
             }
 
-            TableColumn("Last Checked", value: \.lastCheckedSortValue) { app in
-                Text(formatDate(app.lastChecked)).foregroundStyle(.secondary).lineLimit(1)
-            }
-            .width(min: 160, ideal: 180)
-            .customizationID("lastChecked")
+            // Grouped because a table accepts at most 10 columns per builder block.
+            Group {
+                TableColumn("Last Checked", value: \MonitoredApp.lastCheckedSortValue) { app in
+                    Text(formatDate(app.lastChecked)).foregroundStyle(.secondary).lineLimit(1)
+                }
+                .width(min: 160, ideal: 180)
+                .customizationID("lastChecked")
 
-            TableColumn("Last Updated", value: \.lastUpdatedSortValue) { app in
-                Text(formatDate(app.lastUpdated)).foregroundStyle(.secondary).lineLimit(1)
+                TableColumn("Last Updated", value: \MonitoredApp.lastUpdatedSortValue) { app in
+                    Text(formatDate(app.lastUpdated)).foregroundStyle(.secondary).lineLimit(1)
+                }
+                .width(min: 160, ideal: 180)
+                .customizationID("lastUpdated")
             }
-            .width(min: 160, ideal: 180)
-            .customizationID("lastUpdated")
         }
         .background(
             TableDragSourceView(
@@ -580,6 +620,9 @@ struct ContentView: View {
         .sheet(isPresented: $uiState.showingLibraryConflictsSheet) {
             LibraryConflictsSheet(service: service, uiState: uiState)
         }
+        .sheet(isPresented: $uiState.showingInstalledAppsSheet) {
+            InstalledAppsSheet(service: service, uiState: uiState)
+        }
         .sheet(isPresented: $showingSmartGroupSheet) {
             SmartGroupSheet(
                 service: service,
@@ -656,6 +699,7 @@ struct ContentView: View {
             }
             ToolbarItem(placement: .automatic) {
                 Menu {
+                    Toggle("Installed Version", isOn: $showInstalledVersionColumn)
                     Toggle("Current Build", isOn: $showBuildNumberColumn)
                     Toggle("Previous Version", isOn: $showPreviousVersionColumn)
                     Toggle("Vendor", isOn: $showVendorColumn)
@@ -681,6 +725,11 @@ struct ContentView: View {
             applySortOrder(for: service.apps)
             service.runLaunchCheck()
             service.scheduleAutoCheck()
+            uiState.onFindInstalledAppsRequested = { presentInstalledApps(manual: true) }
+            if service.suggestsInstalledAppsAtLaunch {
+                // Let the window finish appearing before presenting a sheet over it.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { presentInstalledApps(manual: false) }
+            }
             if let data = UserDefaults.standard.data(forKey: Self.columnCustomizationKey),
                let saved = try? JSONDecoder().decode(TableColumnCustomization<MonitoredApp>.self, from: data) {
                 columnCustomization = saved
@@ -717,6 +766,10 @@ struct ContentView: View {
             if let data = try? JSONEncoder().encode(newValue) {
                 UserDefaults.standard.set(data, forKey: Self.columnCustomizationKey)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            // Pick up apps the user installed or updated while Version Report was in the background.
+            service.reloadApps()
         }
         .onReceive(NotificationCenter.default.publisher(for: .versionReportCheckNow)) { _ in
             service.runVersionCheck()
@@ -758,4 +811,30 @@ struct ContentView: View {
     }
 
 
+}
+
+/// Installed version, highlighted when an update is waiting to be installed.
+struct InstalledVersionCell: View {
+    let app: MonitoredApp
+
+    var body: some View {
+        switch app.installStatus {
+        case .outdated:
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.up.circle.fill")
+                    .foregroundStyle(.orange)
+                Text(app.installed.map { VersionReportService.marketingVersion($0.version) } ?? "")
+                    .lineLimit(1)
+            }
+            .help("Version \(app.displayVersion) is available")
+        case .notInstalled:
+            Text("Not installed").foregroundStyle(.tertiary).lineLimit(1)
+        case .notTracked:
+            Text("—").foregroundStyle(.tertiary)
+        case .upToDate, .unknown:
+            Text(app.installed.map { VersionReportService.marketingVersion($0.version) } ?? "")
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+    }
 }

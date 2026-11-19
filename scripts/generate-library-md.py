@@ -53,11 +53,12 @@ def main():
         "",
         "Custom sources read a version from the vendor's own website or release notes.",
         "",
-        "| App | Vendor | Source |",
-        "|-----|--------|--------|",
+        "| App | Vendor | Bundle ID | Source |",
+        "|-----|--------|-----------|--------|",
     ]
     for e in entries:
-        lines.append(f"| {cell(e['name'])} | {cell(e.get('vendor') or '')} | {source(e)} |")
+        bundle_id = f"`{e['bundleId']}`" if e.get("bundleId") else ""
+        lines.append(f"| {cell(e['name'])} | {cell(e.get('vendor') or '')} | {bundle_id} | {source(e)} |")
     OUTPUT.write_text("\n".join(lines) + "\n")
     print(f"Wrote {OUTPUT.relative_to(ROOT)} with {len(entries)} apps")
 

@@ -213,6 +213,55 @@ final class VersionReportServiceTests: XCTestCase {
         XCTAssertEqual(SparkleXMLParser.version(in: Data(buildOnlyFeed.utf8)), "42")
     }
 
+    func testBundleIDBackfillsOnlyWhenNeverSet() throws {
+        let bundledURL = testDirectory.appendingPathComponent("bundled-library.json")
+        var bundledFigma = makeConfig(id: "figma", name: "Figma")
+        bundledFigma.bundleID = "com.figma.Desktop"
+        var bundledZoom = makeConfig(id: "zoom", name: "Zoom")
+        bundledZoom.bundleID = "us.zoom.xos"
+        try JSONEncoder().encode([bundledFigma, bundledZoom]).write(to: bundledURL)
+
+        var clearedZoom = makeConfig(id: "zoom", name: "Zoom")
+        clearedZoom.bundleID = ""
+        let service = makeService(bundledLibraryURL: bundledURL)
+        service.saveAppConfigs([makeConfig(id: "figma", name: "Figma"), clearedZoom])
+        service.backfillVendorsInMonitoredApps()
+
+        let configs = service.loadAppConfigs()
+        XCTAssertEqual(configs.first(where: { $0.id == "figma" })?.bundleID, "com.figma.Desktop")
+        XCTAssertEqual(configs.first(where: { $0.id == "zoom" })?.bundleID, "", "A cleared bundle ID stays cleared")
+
+        let roundTrip = try JSONDecoder().decode([AppConfig].self, from: JSONEncoder().encode(configs))
+        XCTAssertEqual(roundTrip, configs)
+    }
+
+    func testInstalledAppSuggestionsSkipTrackedAndOfferedApps() throws {
+        // Finder and Safari are always installed, so they stand in for library apps.
+        let bundledURL = testDirectory.appendingPathComponent("bundled-library.json")
+        var finder = makeConfig(id: "finder", name: "Finder")
+        finder.bundleID = "com.apple.finder"
+        var safari = makeConfig(id: "safari", name: "Safari")
+        safari.bundleID = "com.apple.Safari"
+        var missing = makeConfig(id: "missing", name: "Missing App")
+        missing.bundleID = "com.example.not-installed"
+        try JSONEncoder().encode([finder, safari, missing]).write(to: bundledURL)
+
+        let offeredKey = VersionReportService.offeredInstalledAppIDsKey
+        let originalOffered = UserDefaults.standard.object(forKey: offeredKey)
+        UserDefaults.standard.removeObject(forKey: offeredKey)
+        defer { UserDefaults.standard.set(originalOffered, forKey: offeredKey) }
+
+        let service = makeService(bundledLibraryURL: bundledURL)
+        XCTAssertEqual(service.installedAppSuggestions(excludingOffered: true).map(\.id), ["finder", "safari"])
+
+        service.saveAppConfigs([safari])
+        XCTAssertEqual(service.installedAppSuggestions(excludingOffered: true).map(\.id), ["finder"], "Tracked apps are not offered")
+
+        service.markInstalledAppsOffered(["finder"])
+        XCTAssertEqual(service.installedAppSuggestions(excludingOffered: true).map(\.id), [], "Offered apps are not repeated at launch")
+        XCTAssertEqual(service.installedAppSuggestions(excludingOffered: false).map(\.id), ["finder"], "The File menu still lists them")
+    }
+
     func testMarkingAnUpdateAsReadUpdatesTheVisibleUnreadCount() {
         let service = makeService()
         let config = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")
@@ -372,5 +421,67 @@ final class LibraryDocumentationTests: XCTestCase {
             markdown.contains("**\(configs.count) apps**"),
             "LIBRARY.md app count is out of date. Run: python3 scripts/generate-library-md.py"
         )
+    }
+}
+
+
+final class InstalledAppsTests: XCTestCase {
+
+    private func installed(_ version: String) -> InstalledAppInfo {
+        InstalledAppInfo(bundleID: "com.example.app", version: version, url: URL(fileURLWithPath: "/Applications/Example.app"))
+    }
+
+    private func status(_ installedVersion: String, _ available: String) -> InstallStatus {
+        InstalledApps.status(installed: installed(installedVersion), available: available, tracksInstall: true)
+    }
+
+    func testOlderInstalledVersionIsOutdated() {
+        XCTAssertEqual(status("5.8.1", "6.0.1,3221"), .outdated)
+        XCTAssertEqual(status("2.9.0", "2.10.0"), .outdated)
+        XCTAssertEqual(status("126.11.8", "126.12.7"), .outdated)
+    }
+
+    func testDifferentlyFormattedSameReleaseIsUpToDate() {
+        XCTAssertEqual(status("6.0.1", "6.0.1,3221"), .upToDate)
+        XCTAssertEqual(status("7.2.5 (90525)", "7.2.5.90525"), .upToDate)
+        XCTAssertEqual(status("21.2.0", "21.2"), .upToDate)
+        XCTAssertEqual(status("27", "27"), .upToDate)
+    }
+
+    func testBuildNumberIsUsedWhenTheSourcePublishesIt() {
+        let office = InstalledAppInfo(bundleID: "com.microsoft.Word", version: "16.115.1", build: "16.115.26111533",
+                                      url: URL(fileURLWithPath: "/Applications/Microsoft Word.app"))
+        XCTAssertEqual(InstalledApps.status(installed: office, available: "16.115.26111533", tracksInstall: true), .upToDate)
+        XCTAssertEqual(InstalledApps.status(installed: office, available: "16.116.26120101", tracksInstall: true), .outdated)
+    }
+
+    func testPlainBuildCounterDoesNotHideAnUpdate() {
+        let transmit = InstalledAppInfo(bundleID: "com.panic.transmit", version: "5.11.6", build: "774261",
+                                        url: URL(fileURLWithPath: "/Applications/Transmit.app"))
+        XCTAssertEqual(InstalledApps.status(installed: transmit, available: "5.11.7", tracksInstall: true), .outdated)
+    }
+
+    func testNewerInstalledVersionIsNotFlagged() {
+        XCTAssertEqual(status("2.3.0", "2.2.9"), .upToDate)
+    }
+
+    func testMissingOrUncomparableVersions() {
+        XCTAssertEqual(status("5.0", "Unknown"), .unknown)
+        XCTAssertEqual(InstalledApps.status(installed: nil, available: "1.0", tracksInstall: true), .notInstalled)
+        XCTAssertEqual(InstalledApps.status(installed: nil, available: "1.0", tracksInstall: false), .notTracked)
+    }
+
+    func testEveryBundledLibraryEntryHasAUniqueBundleID() throws {
+        let libraryURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Version Report/Resources/app-library.json")
+        let configs = try JSONDecoder().decode([AppConfig].self, from: Data(contentsOf: libraryURL))
+
+        let missing = configs.filter { $0.displayBundleID == nil }.map(\.name)
+        XCTAssertEqual(missing, [], "Every built-in app needs a bundleId")
+
+        let ids = configs.compactMap(\.displayBundleID)
+        XCTAssertEqual(Set(ids).count, ids.count, "Bundle IDs must be unique")
     }
 }

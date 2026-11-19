@@ -195,6 +195,7 @@ extension AppSource: Codable {
 struct AppConfig: Codable, Identifiable, Equatable {
     enum CodingKeys: String, CodingKey {
         case id, name, vendor
+        case bundleID = "bundleId"
     }
 
     var id: String
@@ -202,17 +203,25 @@ struct AppConfig: Codable, Identifiable, Equatable {
     let source: AppSource
     // nil = never set (eligible for backfill from the bundled library); "" = user cleared it.
     var vendor: String?
+    // Same convention as vendor: nil = never set, "" = user cleared it.
+    var bundleID: String?
+
+    var displayBundleID: String? {
+        guard let trimmed = bundleID?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+        return trimmed
+    }
 
     var displayVendor: String? {
         guard let trimmed = vendor?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
         return trimmed
     }
 
-    init(id: String? = nil, name: String, source: AppSource, vendor: String? = nil) {
+    init(id: String? = nil, name: String, source: AppSource, vendor: String? = nil, bundleID: String? = nil) {
         self.id = id ?? Self.defaultID(for: name)
         self.name = name
         self.source = source
         self.vendor = vendor
+        self.bundleID = bundleID
     }
 
     init(from decoder: Decoder) throws {
@@ -222,7 +231,8 @@ struct AppConfig: Codable, Identifiable, Equatable {
             id: try container.decodeIfPresent(String.self, forKey: .id),
             name: name,
             source: try AppSource(from: decoder),
-            vendor: try container.decodeIfPresent(String.self, forKey: .vendor)
+            vendor: try container.decodeIfPresent(String.self, forKey: .vendor),
+            bundleID: try container.decodeIfPresent(String.self, forKey: .bundleID)
         )
     }
 
@@ -231,6 +241,7 @@ struct AppConfig: Codable, Identifiable, Equatable {
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
         try container.encodeIfPresent(vendor, forKey: .vendor)
+        try container.encodeIfPresent(bundleID, forKey: .bundleID)
         try source.encode(to: encoder)
     }
 
@@ -559,6 +570,57 @@ final class VersionReportService: ObservableObject {
         return localConfigs.map { bundledByID[$0.id] ?? $0 }
     }
 
+    // MARK: - Installed app suggestions
+
+    static let suggestInstalledAppsKey = "versionReport.suggestInstalledApps"
+    static let offeredInstalledAppIDsKey = "versionReport.offeredInstalledAppIDs"
+
+    /// Whether to offer installed built-in apps at launch. On unless turned off.
+    var suggestsInstalledAppsAtLaunch: Bool {
+        get { UserDefaults.standard.object(forKey: Self.suggestInstalledAppsKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: Self.suggestInstalledAppsKey) }
+    }
+
+    /// Built-in library apps installed on this Mac that aren't tracked yet.
+    /// With `excludingOffered`, apps already offered once are left out, so the
+    /// launch prompt only reappears when something new matches.
+    func installedAppSuggestions(excludingOffered: Bool) -> [InstalledAppSuggestion] {
+        guard let bundledLibraryURL = bundledAppLibraryURL,
+              let data = try? Data(contentsOf: bundledLibraryURL),
+              let bundledConfigs = try? JSONDecoder().decode([AppConfig].self, from: data) else {
+            return []
+        }
+
+        let tracked = loadAppConfigs()
+        let trackedIDs = Set(tracked.map(\.id))
+        let trackedBundleIDs = Set(tracked.compactMap(\.displayBundleID))
+        let trackedNames = Set(tracked.map { $0.name.lowercased() })
+        let offered = excludingOffered ? offeredInstalledAppIDs : []
+
+        return normalizeIDs(in: bundledConfigs)
+            .filter { config in
+                !trackedIDs.contains(config.id)
+                    && !offered.contains(config.id)
+                    && !trackedNames.contains(config.name.lowercased())
+                    && !(config.displayBundleID.map(trackedBundleIDs.contains) ?? false)
+            }
+            .compactMap { config in
+                guard let bundleID = config.displayBundleID,
+                      let installed = InstalledApps.lookup(bundleID: bundleID, appName: config.name) else { return nil }
+                return InstalledAppSuggestion(config: config, installed: installed)
+            }
+            .sorted { $0.config.name.localizedCaseInsensitiveCompare($1.config.name) == .orderedAscending }
+    }
+
+    var offeredInstalledAppIDs: Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: Self.offeredInstalledAppIDsKey) ?? [])
+    }
+
+    func markInstalledAppsOffered(_ ids: [String]) {
+        let updated = offeredInstalledAppIDs.union(ids)
+        UserDefaults.standard.set(updated.sorted(), forKey: Self.offeredInstalledAppIDsKey)
+    }
+
     func saveAppLibrary(_ configs: [AppConfig]) {
 
         let encoder = JSONEncoder()
@@ -647,6 +709,10 @@ final class VersionReportService: ObservableObject {
                     userLibraryConfigs[index].vendor = vendor
                     didChangeLibrary = true
                 }
+                if userLibraryConfigs[index].bundleID == nil, let bundleID = bundledConfig.bundleID {
+                    userLibraryConfigs[index].bundleID = bundleID
+                    didChangeLibrary = true
+                }
             } else {
                 // New entry: add it; never overwrite an entry the user already has.
                 userLibraryConfigs.append(bundledConfig)
@@ -666,17 +732,23 @@ final class VersionReportService: ObservableObject {
             return
         }
 
-        let bundledVendors = Dictionary(
-            bundledConfigs.compactMap { config in config.vendor.map { (config.id, $0) } },
+        let bundledByID = Dictionary(
+            bundledConfigs.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }
         )
 
         var configs = loadAppConfigs()
         var didChange = false
 
-        for index in configs.indices where configs[index].vendor == nil {
-            if let vendor = bundledVendors[configs[index].id] {
+        // Fill in fields the user never set; a cleared field ("") is left alone.
+        for index in configs.indices {
+            guard let bundled = bundledByID[configs[index].id] else { continue }
+            if configs[index].vendor == nil, let vendor = bundled.vendor {
                 configs[index].vendor = vendor
+                didChange = true
+            }
+            if configs[index].bundleID == nil, let bundleID = bundled.bundleID {
+                configs[index].bundleID = bundleID
                 didChange = true
             }
         }
@@ -850,6 +922,10 @@ final class VersionReportService: ObservableObject {
         }
 
         Task {
+            await applyDetectedBundleIDIfNeeded(for: config)
+        }
+
+        Task {
             do {
                 if let version = try await fetchCurrentVersion(for: config) {
 
@@ -922,6 +998,61 @@ final class VersionReportService: ObservableObject {
         }
     }
 
+    private func applyDetectedBundleIDIfNeeded(for config: AppConfig) async {
+        guard config.bundleID == nil, let bundleID = await detectBundleID(for: config) else { return }
+
+        await MainActor.run {
+            var configs = loadAppConfigs()
+            guard let index = configs.firstIndex(where: { $0.id == config.id }),
+                  configs[index].bundleID == nil else { return }
+            configs[index].bundleID = bundleID
+            saveAppConfigs(configs)
+            apps = loadMonitoredApps()
+        }
+    }
+
+    /// Best-effort bundle ID for a newly added app. App Store lookups are exact;
+    /// otherwise the ID is read from a matching app installed on this Mac.
+    func detectBundleID(for config: AppConfig) async -> String? {
+        switch config.source {
+        case .appstore(let pageURL, _, _):
+            guard let id = iTunesID(from: pageURL),
+                  let url = URL(string: "https://itunes.apple.com/lookup?id=\(id)&entity=macSoftware"),
+                  let (data, _) = try? await URLSession.shared.data(from: url),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let result = (json["results"] as? [[String: Any]])?.first,
+                  let bundleID = result["bundleId"] as? String else { break }
+            return bundleID
+
+        case .homebrew(let caskName):
+            if let appName = await homebrewAppBundleName(caskName),
+               let info = InstalledApps.readInfo(at: InstalledApps.applicationURL(named: appName)) {
+                return info.bundleID
+            }
+
+        default:
+            break
+        }
+
+        return InstalledApps.readInfo(at: InstalledApps.applicationURL(named: "\(config.name).app"))?.bundleID
+    }
+
+    /// The .app filename a Homebrew cask installs, e.g. "Figma.app".
+    private func homebrewAppBundleName(_ caskName: String) async -> String? {
+        guard let url = URL(string: "https://formulae.brew.sh/api/cask/\(caskName).json"),
+              let (data, _) = try? await URLSession.shared.data(from: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let artifacts = json["artifacts"] as? [[String: Any]] else { return nil }
+
+        for artifact in artifacts {
+            if let apps = artifact["app"] as? [Any],
+               let name = apps.first(where: { $0 is String }) as? String {
+                return name
+            }
+        }
+        return nil
+    }
+
     func updateAppConfig(_ config: AppConfig, replacingID id: String) -> AppConfig? {
         var configs = loadAppConfigs()
 
@@ -934,7 +1065,8 @@ final class VersionReportService: ObservableObject {
             id: existingConfig.id,
             name: config.name,
             source: config.source,
-            vendor: config.vendor
+            vendor: config.vendor,
+            bundleID: config.bundleID
         )
 
         configs[index] = updatedConfig
@@ -1633,7 +1765,9 @@ final class VersionReportService: ObservableObject {
                     hasUnreadUpdate: state?.hasUnreadUpdate ?? false,
                     lastCheckError: state?.lastCheckError,
                     latestReleaseURL: config.source.latestReleaseURL,
-                    updateCycle: updateCycle(forAppID: config.id)
+                    updateCycle: updateCycle(forAppID: config.id),
+                    installed: InstalledApps.lookup(bundleID: config.displayBundleID, appName: config.name),
+                    tracksInstall: config.displayBundleID != nil
                 )
             )
 

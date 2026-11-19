@@ -7,105 +7,105 @@ Add any of them with **File → Add App From Library…** (⌥⌘L).
 
 Custom sources read a version from the vendor's own website or release notes.
 
-| App | Vendor | Source |
-|-----|--------|--------|
-| Adobe Acrobat Reader | Adobe | [Homebrew Cask](https://formulae.brew.sh/cask/adobe-acrobat-reader) |
-| Adobe Creative Cloud | Adobe | [Homebrew Cask](https://formulae.brew.sh/cask/adobe-creative-cloud) |
-| Adobe Photoshop | Adobe | Custom |
-| Alfred | Running with Crayons | [Homebrew Cask](https://formulae.brew.sh/cask/alfred) |
-| Arc | The Browser Company | [Homebrew Cask](https://formulae.brew.sh/cask/arc) |
-| Atlassian SourceTree | Atlassian | [Homebrew Cask](https://formulae.brew.sh/cask/sourcetree) |
-| Audacity | Audacity Team | [Homebrew Cask](https://formulae.brew.sh/cask/audacity) |
-| Blackmagic RAW Player | Blackmagic Design | [App Store](https://itunes.apple.com/lookup?id=1435415804&entity=macSoftware) |
-| Boxing Day | Sherrod Software | [GitHub Releases](https://github.com/sherrodsoftware/BoxingDay) |
-| BrowserStackLocal | BrowserStack | [Homebrew Cask](https://formulae.brew.sh/cask/browserstacklocal) |
-| Bundle Report | Sherrod Software | [GitHub Releases](https://github.com/sherrodsoftware/BundleReport) |
-| CatDV Pro | Quantum | Custom |
-| Charles Proxy | XK72 | [Homebrew Cask](https://formulae.brew.sh/cask/charles) |
-| ChatGPT | OpenAI | [Homebrew Cask](https://formulae.brew.sh/cask/chatgpt) |
-| ChatGPT Classic | OpenAI | [Homebrew Cask](https://formulae.brew.sh/cask/chatgpt-classic) |
-| Claude Desktop | Anthropic | [Homebrew Cask](https://formulae.brew.sh/cask/claude) |
-| Colour Contrast Analyser | TPGi | [Homebrew Cask](https://formulae.brew.sh/cask/colour-contrast-analyser) |
-| Compressor | Apple | [App Store](https://itunes.apple.com/lookup?id=6746516157&entity=macSoftware) |
-| DataGrip | JetBrains | [Homebrew Cask](https://formulae.brew.sh/cask/datagrip) |
-| DaVinci Resolve | Blackmagic Design | [App Store](https://itunes.apple.com/lookup?id=571213070&entity=macSoftware) |
-| DaVinci Resolve Studio | Blackmagic Design | [App Store](https://itunes.apple.com/lookup?id=900392332&entity=macSoftware) |
-| DBeaver Community Edition | DBeaver Corp | [Homebrew Cask](https://formulae.brew.sh/cask/dbeaver-community) |
-| DJI Studio | DJI | Custom |
-| Docker Desktop | Docker | [Homebrew Cask](https://formulae.brew.sh/cask/docker-desktop) |
-| Downie | Charcoal Design | [Homebrew Cask](https://formulae.brew.sh/cask/downie) |
-| Dropbox | Dropbox | Custom |
-| EditReady | Hedge | Custom |
-| Elgato Stream Deck | Elgato | Custom |
-| Figma | Figma | [Homebrew Cask](https://formulae.brew.sh/cask/figma) |
-| Final Cut Pro | Apple | [App Store](https://itunes.apple.com/lookup?id=424389933&entity=macSoftware) |
-| Firefox | Mozilla | [Homebrew Cask](https://formulae.brew.sh/cask/firefox) |
-| Forecast | Marco Arment | [Homebrew Cask](https://formulae.brew.sh/cask/forecast) |
-| Framer | Framer | [Homebrew Cask](https://formulae.brew.sh/cask/framer) |
-| GarageBand | Apple | [App Store](https://itunes.apple.com/lookup?id=682658836&entity=macSoftware) |
-| Gemini | Google | [Homebrew Cask](https://formulae.brew.sh/cask/google-gemini) |
-| GitHub Desktop | GitHub | [Homebrew Cask](https://formulae.brew.sh/cask/github) |
-| Google Ads Editor | Google | [Homebrew Cask](https://formulae.brew.sh/cask/google-ads-editor) |
-| Google Chrome | Google | [Homebrew Cask](https://formulae.brew.sh/cask/google-chrome) |
-| Grammarly Desktop | Grammarly | [Homebrew Cask](https://formulae.brew.sh/cask/grammarly-desktop) |
-| Granola | Granola | [Homebrew Cask](https://formulae.brew.sh/cask/granola) |
-| HandBrake | HandBrake Team | [Homebrew Cask](https://formulae.brew.sh/cask/handbrake-app) |
-| iMovie | Apple | [App Store](https://itunes.apple.com/lookup?id=408981434&entity=macSoftware) |
-| Insta360 Studio | Insta360 | [Homebrew Cask](https://formulae.brew.sh/cask/insta360-studio) |
-| IntelliJ IDEA Ultimate | JetBrains | [Homebrew Cask](https://formulae.brew.sh/cask/intellij-idea) |
-| iTerm | George Nachman | [Homebrew Cask](https://formulae.brew.sh/cask/iterm2) |
-| Jabra Direct | Jabra | [Homebrew Cask](https://formulae.brew.sh/cask/jabra-direct) |
-| Jamf Extender | Jamf | [App Store](https://itunes.apple.com/lookup?id=6761075435&entity=macSoftware) |
-| Keyboard Maestro | Stairways Software | [Homebrew Cask](https://formulae.brew.sh/cask/keyboard-maestro) |
-| Keynote | Apple | [App Store](https://itunes.apple.com/lookup?id=361285480&entity=macSoftware) |
-| LastPass for Desktop | LastPass | Custom |
-| Leapp | Noovolari | [Homebrew Cask](https://formulae.brew.sh/cask/leapp) |
-| Logic Pro | Apple | [App Store](https://itunes.apple.com/lookup?id=634148309&entity=macSoftware) |
-| MainStage | Apple | [App Store](https://itunes.apple.com/lookup?id=6746637089&entity=macSoftware) |
-| Microsoft Edge | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-edge) |
-| Microsoft Excel | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-excel) |
-| Microsoft OneNote | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-onenote) |
-| Microsoft Outlook | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-outlook) |
-| Microsoft PowerPoint | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-powerpoint) |
-| Microsoft Teams | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-teams) |
-| Microsoft Word | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-word) |
-| Motion | Apple | [App Store](https://itunes.apple.com/lookup?id=6746637149&entity=macSoftware) |
-| NetNewsWire | Brent Simmons | [Homebrew Cask](https://formulae.brew.sh/cask/netnewswire) |
-| Notion | Notion | [Homebrew Cask](https://formulae.brew.sh/cask/notion) |
-| Nucleo | Nucleo | [Homebrew Cask](https://formulae.brew.sh/cask/nucleo) |
-| Numbers | Apple | [App Store](https://itunes.apple.com/lookup?id=361304891&entity=macSoftware) |
-| Obsidian | Obsidian | [Homebrew Cask](https://formulae.brew.sh/cask/obsidian) |
-| Okta Verify | Okta | [Homebrew Cask](https://formulae.brew.sh/cask/okta-verify) |
-| OneDrive | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/onedrive) |
-| OpenCode | Anomaly Innovations | [Homebrew Cask](https://formulae.brew.sh/cask/opencode-desktop) |
-| OS Report | Sherrod Software | [GitHub Releases](https://github.com/sherrodsoftware/OSReport) |
-| Pages | Apple | [App Store](https://itunes.apple.com/lookup?id=361309726&entity=macSoftware) |
-| Pixelmator Pro | Pixelmator | [App Store](https://itunes.apple.com/lookup?id=6746662575&entity=macSoftware) |
-| Postman | Postman | [Homebrew Cask](https://formulae.brew.sh/cask/postman) |
-| Prezi Video | Prezi | [Homebrew Cask](https://formulae.brew.sh/cask/prezi-video) |
-| Privileges | SAP | [Homebrew Cask](https://formulae.brew.sh/cask/privileges) |
-| Pro Tools | Avid | Custom |
-| Qfinder Pro | QNAP | [Homebrew Cask](https://formulae.brew.sh/cask/qfinder-pro) |
-| QLab | Figure 53 | [Homebrew Cask](https://formulae.brew.sh/cask/qlab) |
-| Rancher Desktop | SUSE | [Homebrew Cask](https://formulae.brew.sh/cask/rancher) |
-| Rectangle | Ryan Hanson | [Homebrew Cask](https://formulae.brew.sh/cask/rectangle) |
-| Rider | JetBrains | [Homebrew Cask](https://formulae.brew.sh/cask/rider) |
-| RingCentral for Teams Desktop Plugin | RingCentral | Custom |
-| RStudio Desktop | Posit | [Homebrew Cask](https://formulae.brew.sh/cask/rstudio) |
-| RubyMine | JetBrains | [Homebrew Cask](https://formulae.brew.sh/cask/rubymine) |
-| Screaming Frog SEO Spider | Screaming Frog | [Homebrew Cask](https://formulae.brew.sh/cask/screaming-frog-seo-spider) |
-| Snagit | TechSmith | [Homebrew Cask](https://formulae.brew.sh/cask/snagit) |
-| Soundly | Soundly | Custom |
-| SoundQ | Pro Sound Effects | Custom |
-| Spotify | Spotify | [Homebrew Cask](https://formulae.brew.sh/cask/spotify) |
-| Tableau Desktop | Salesforce | [Homebrew Cask](https://formulae.brew.sh/cask/tableau) |
-| Tableau Prep Builder | Salesforce | [Homebrew Cask](https://formulae.brew.sh/cask/tableau-prep) |
-| TextExpander | Smile | [Homebrew Cask](https://formulae.brew.sh/cask/textexpander) |
-| Tiles for Zoom | Liminal | Custom |
-| Transmit | Panic | [Homebrew Cask](https://formulae.brew.sh/cask/transmit) |
-| Version Report | Sherrod Software | [GitHub Releases](https://github.com/sherrodsoftware/VersionReport) |
-| Visual Studio Code | Microsoft | [Homebrew Cask](https://formulae.brew.sh/cask/visual-studio-code) |
-| Vivaldi | Vivaldi Technologies | [Homebrew Cask](https://formulae.brew.sh/cask/vivaldi) |
-| VLC | VideoLAN | [Homebrew Cask](https://formulae.brew.sh/cask/vlc) |
-| Xcode | Apple | [App Store](https://itunes.apple.com/lookup?id=497799835&entity=macSoftware) |
-| Zoom | Zoom | [Homebrew Cask](https://formulae.brew.sh/cask/zoom) |
+| App | Vendor | Bundle ID | Source |
+|-----|--------|-----------|--------|
+| Adobe Acrobat Reader | Adobe | `com.adobe.Reader` | [Homebrew Cask](https://formulae.brew.sh/cask/adobe-acrobat-reader) |
+| Adobe Creative Cloud | Adobe | `com.adobe.acc.AdobeCreativeCloud` | [Homebrew Cask](https://formulae.brew.sh/cask/adobe-creative-cloud) |
+| Adobe Photoshop | Adobe | `com.adobe.Photoshop` | Custom |
+| Alfred | Running with Crayons | `com.runningwithcrayons.Alfred` | [Homebrew Cask](https://formulae.brew.sh/cask/alfred) |
+| Arc | The Browser Company | `company.thebrowser.Browser` | [Homebrew Cask](https://formulae.brew.sh/cask/arc) |
+| Atlassian SourceTree | Atlassian | `com.torusknot.SourceTreeNotMAS` | [Homebrew Cask](https://formulae.brew.sh/cask/sourcetree) |
+| Audacity | Audacity Team | `org.audacityteam.audacity` | [Homebrew Cask](https://formulae.brew.sh/cask/audacity) |
+| Blackmagic RAW Player | Blackmagic Design | `com.blackmagic-design.BlackmagicRawPlayer` | [App Store](https://itunes.apple.com/lookup?id=1435415804&entity=macSoftware) |
+| Boxing Day | Sherrod Software | `com.sherrodsoftware.BoxingDay` | [GitHub Releases](https://github.com/sherrodsoftware/BoxingDay) |
+| BrowserStackLocal | BrowserStack | `com.browserstack.local` | [Homebrew Cask](https://formulae.brew.sh/cask/browserstacklocal) |
+| Bundle Report | Sherrod Software | `com.sherrodsoftware.BundleReport` | [GitHub Releases](https://github.com/sherrodsoftware/BundleReport) |
+| CatDV Pro | Quantum | `uk.co.squarebox.CatDVPro` | Custom |
+| Charles Proxy | XK72 | `com.xk72.Charles` | [Homebrew Cask](https://formulae.brew.sh/cask/charles) |
+| ChatGPT | OpenAI | `com.openai.codex` | [Homebrew Cask](https://formulae.brew.sh/cask/chatgpt) |
+| ChatGPT Classic | OpenAI | `com.openai.chat` | [Homebrew Cask](https://formulae.brew.sh/cask/chatgpt-classic) |
+| Claude Desktop | Anthropic | `com.anthropic.claudefordesktop` | [Homebrew Cask](https://formulae.brew.sh/cask/claude) |
+| Colour Contrast Analyser | TPGi | `com.electron.cca` | [Homebrew Cask](https://formulae.brew.sh/cask/colour-contrast-analyser) |
+| Compressor | Apple | `com.apple.CompressorApp` | [App Store](https://itunes.apple.com/lookup?id=6746516157&entity=macSoftware) |
+| DataGrip | JetBrains | `com.jetbrains.datagrip` | [Homebrew Cask](https://formulae.brew.sh/cask/datagrip) |
+| DaVinci Resolve | Blackmagic Design | `com.blackmagic-design.DaVinciResolveLite` | [App Store](https://itunes.apple.com/lookup?id=571213070&entity=macSoftware) |
+| DaVinci Resolve Studio | Blackmagic Design | `com.blackmagic-design.DaVinciResolveAppStore` | [App Store](https://itunes.apple.com/lookup?id=900392332&entity=macSoftware) |
+| DBeaver Community Edition | DBeaver Corp | `org.jkiss.dbeaver.core.product` | [Homebrew Cask](https://formulae.brew.sh/cask/dbeaver-community) |
+| DJI Studio | DJI | `com.light.studio` | Custom |
+| Docker Desktop | Docker | `com.docker.docker` | [Homebrew Cask](https://formulae.brew.sh/cask/docker-desktop) |
+| Downie | Charcoal Design | `com.charliemonroe.Downie-4` | [Homebrew Cask](https://formulae.brew.sh/cask/downie) |
+| Dropbox | Dropbox | `com.getdropbox.dropbox` | Custom |
+| EditReady | Hedge | `video.hedge.EditReady.Mac` | Custom |
+| Elgato Stream Deck | Elgato | `com.elgato.StreamDeck` | Custom |
+| Figma | Figma | `com.figma.Desktop` | [Homebrew Cask](https://formulae.brew.sh/cask/figma) |
+| Final Cut Pro | Apple | `com.apple.FinalCut` | [App Store](https://itunes.apple.com/lookup?id=424389933&entity=macSoftware) |
+| Firefox | Mozilla | `org.mozilla.firefox` | [Homebrew Cask](https://formulae.brew.sh/cask/firefox) |
+| Forecast | Marco Arment | `fm.overcast.forecast-encoder` | [Homebrew Cask](https://formulae.brew.sh/cask/forecast) |
+| Framer | Framer | `com.framer.electron` | [Homebrew Cask](https://formulae.brew.sh/cask/framer) |
+| GarageBand | Apple | `com.apple.garageband10` | [App Store](https://itunes.apple.com/lookup?id=682658836&entity=macSoftware) |
+| Gemini | Google | `com.google.GeminiMacOS` | [Homebrew Cask](https://formulae.brew.sh/cask/google-gemini) |
+| GitHub Desktop | GitHub | `com.github.GitHubClient` | [Homebrew Cask](https://formulae.brew.sh/cask/github) |
+| Google Ads Editor | Google | `com.google.googleadseditor` | [Homebrew Cask](https://formulae.brew.sh/cask/google-ads-editor) |
+| Google Chrome | Google | `com.google.Chrome` | [Homebrew Cask](https://formulae.brew.sh/cask/google-chrome) |
+| Grammarly Desktop | Grammarly | `com.grammarly.ProjectLlama` | [Homebrew Cask](https://formulae.brew.sh/cask/grammarly-desktop) |
+| Granola | Granola | `com.granola.app` | [Homebrew Cask](https://formulae.brew.sh/cask/granola) |
+| HandBrake | HandBrake Team | `fr.handbrake.HandBrake` | [Homebrew Cask](https://formulae.brew.sh/cask/handbrake-app) |
+| iMovie | Apple | `com.apple.iMovieApp` | [App Store](https://itunes.apple.com/lookup?id=408981434&entity=macSoftware) |
+| Insta360 Studio | Insta360 | `com.insta360.studio` | [Homebrew Cask](https://formulae.brew.sh/cask/insta360-studio) |
+| IntelliJ IDEA Ultimate | JetBrains | `com.jetbrains.intellij` | [Homebrew Cask](https://formulae.brew.sh/cask/intellij-idea) |
+| iTerm | George Nachman | `com.googlecode.iterm2` | [Homebrew Cask](https://formulae.brew.sh/cask/iterm2) |
+| Jabra Direct | Jabra | `com.jabra.directonline` | [Homebrew Cask](https://formulae.brew.sh/cask/jabra-direct) |
+| Jamf Extender | Jamf | `com.jamf.jamfextender` | [App Store](https://itunes.apple.com/lookup?id=6761075435&entity=macSoftware) |
+| Keyboard Maestro | Stairways Software | `com.stairways.keyboardmaestro.editor` | [Homebrew Cask](https://formulae.brew.sh/cask/keyboard-maestro) |
+| Keynote | Apple | `com.apple.Keynote` | [App Store](https://itunes.apple.com/lookup?id=361285480&entity=macSoftware) |
+| LastPass for Desktop | LastPass | `com.lastpass.lastpass-electron` | Custom |
+| Leapp | Noovolari | `com.leapp.app` | [Homebrew Cask](https://formulae.brew.sh/cask/leapp) |
+| Logic Pro | Apple | `com.apple.logic10` | [App Store](https://itunes.apple.com/lookup?id=634148309&entity=macSoftware) |
+| MainStage | Apple | `com.apple.MainStageApp` | [App Store](https://itunes.apple.com/lookup?id=6746637089&entity=macSoftware) |
+| Microsoft Edge | Microsoft | `com.microsoft.edgemac` | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-edge) |
+| Microsoft Excel | Microsoft | `com.microsoft.Excel` | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-excel) |
+| Microsoft OneNote | Microsoft | `com.microsoft.onenote.mac` | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-onenote) |
+| Microsoft Outlook | Microsoft | `com.microsoft.Outlook` | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-outlook) |
+| Microsoft PowerPoint | Microsoft | `com.microsoft.Powerpoint` | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-powerpoint) |
+| Microsoft Teams | Microsoft | `com.microsoft.teams2` | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-teams) |
+| Microsoft Word | Microsoft | `com.microsoft.Word` | [Homebrew Cask](https://formulae.brew.sh/cask/microsoft-word) |
+| Motion | Apple | `com.apple.motionappApp` | [App Store](https://itunes.apple.com/lookup?id=6746637149&entity=macSoftware) |
+| NetNewsWire | Brent Simmons | `com.ranchero.NetNewsWire-Evergreen` | [Homebrew Cask](https://formulae.brew.sh/cask/netnewswire) |
+| Notion | Notion | `notion.id` | [Homebrew Cask](https://formulae.brew.sh/cask/notion) |
+| Nucleo | Nucleo | `co.ambercreative.nucleo` | [Homebrew Cask](https://formulae.brew.sh/cask/nucleo) |
+| Numbers | Apple | `com.apple.Numbers` | [App Store](https://itunes.apple.com/lookup?id=361304891&entity=macSoftware) |
+| Obsidian | Obsidian | `md.obsidian` | [Homebrew Cask](https://formulae.brew.sh/cask/obsidian) |
+| Okta Verify | Okta | `com.okta.mobile` | [Homebrew Cask](https://formulae.brew.sh/cask/okta-verify) |
+| OneDrive | Microsoft | `com.microsoft.OneDrive` | [Homebrew Cask](https://formulae.brew.sh/cask/onedrive) |
+| OpenCode | Anomaly Innovations | `ai.opencode.desktop` | [Homebrew Cask](https://formulae.brew.sh/cask/opencode-desktop) |
+| OS Report | Sherrod Software | `com.sherrodsoftware.OSReport` | [GitHub Releases](https://github.com/sherrodsoftware/OSReport) |
+| Pages | Apple | `com.apple.Pages` | [App Store](https://itunes.apple.com/lookup?id=361309726&entity=macSoftware) |
+| Pixelmator Pro | Pixelmator | `com.apple.pixelmator` | [App Store](https://itunes.apple.com/lookup?id=6746662575&entity=macSoftware) |
+| Postman | Postman | `com.postmanlabs.mac` | [Homebrew Cask](https://formulae.brew.sh/cask/postman) |
+| Prezi Video | Prezi | `com.prezi.PreziCast` | [Homebrew Cask](https://formulae.brew.sh/cask/prezi-video) |
+| Privileges | SAP | `corp.sap.privileges` | [Homebrew Cask](https://formulae.brew.sh/cask/privileges) |
+| Pro Tools | Avid | `com.avid.ProTools` | Custom |
+| Qfinder Pro | QNAP | `qnap.com.qfinder` | [Homebrew Cask](https://formulae.brew.sh/cask/qfinder-pro) |
+| QLab | Figure 53 | `com.figure53.QLab.5` | [Homebrew Cask](https://formulae.brew.sh/cask/qlab) |
+| Rancher Desktop | SUSE | `io.rancherdesktop.app` | [Homebrew Cask](https://formulae.brew.sh/cask/rancher) |
+| Rectangle | Ryan Hanson | `com.knollsoft.Rectangle` | [Homebrew Cask](https://formulae.brew.sh/cask/rectangle) |
+| Rider | JetBrains | `com.jetbrains.rider` | [Homebrew Cask](https://formulae.brew.sh/cask/rider) |
+| RingCentral for Teams Desktop Plugin | RingCentral | `com.ringcentral.teams-desktop-plugin` | Custom |
+| RStudio Desktop | Posit | `com.rstudio.desktop` | [Homebrew Cask](https://formulae.brew.sh/cask/rstudio) |
+| RubyMine | JetBrains | `com.jetbrains.rubymine` | [Homebrew Cask](https://formulae.brew.sh/cask/rubymine) |
+| Screaming Frog SEO Spider | Screaming Frog | `uk.co.screamingfrog.seo.spider` | [Homebrew Cask](https://formulae.brew.sh/cask/screaming-frog-seo-spider) |
+| Snagit | TechSmith | `com.TechSmith.Snagit` | [Homebrew Cask](https://formulae.brew.sh/cask/snagit) |
+| Soundly | Soundly | `com.soundly.Soundly` | Custom |
+| SoundQ | Pro Sound Effects | `com.prosoundeffects.soundq` | Custom |
+| Spotify | Spotify | `com.spotify.client` | [Homebrew Cask](https://formulae.brew.sh/cask/spotify) |
+| Tableau Desktop | Salesforce | `com.tableausoftware.tableaudesktop` | [Homebrew Cask](https://formulae.brew.sh/cask/tableau) |
+| Tableau Prep Builder | Salesforce | `com.tableausoftware.tableauprep` | [Homebrew Cask](https://formulae.brew.sh/cask/tableau-prep) |
+| TextExpander | Smile | `com.smileonmymac.textexpander` | [Homebrew Cask](https://formulae.brew.sh/cask/textexpander) |
+| Tiles for Zoom | Liminal | `us.zoom.tiles` | Custom |
+| Transmit | Panic | `com.panic.Transmit` | [Homebrew Cask](https://formulae.brew.sh/cask/transmit) |
+| Version Report | Sherrod Software | `com.sherrodsoftware.VersionReport` | [GitHub Releases](https://github.com/sherrodsoftware/VersionReport) |
+| Visual Studio Code | Microsoft | `com.microsoft.VSCode` | [Homebrew Cask](https://formulae.brew.sh/cask/visual-studio-code) |
+| Vivaldi | Vivaldi Technologies | `com.vivaldi.Vivaldi` | [Homebrew Cask](https://formulae.brew.sh/cask/vivaldi) |
+| VLC | VideoLAN | `org.videolan.vlc` | [Homebrew Cask](https://formulae.brew.sh/cask/vlc) |
+| Xcode | Apple | `com.apple.dt.Xcode` | [App Store](https://itunes.apple.com/lookup?id=497799835&entity=macSoftware) |
+| Zoom | Zoom | `us.zoom.xos` | [Homebrew Cask](https://formulae.brew.sh/cask/zoom) |

@@ -199,6 +199,7 @@ private struct CriterionRow: View {
         case .sourceType:      return [.equals, .notEquals]
         case .vendor:          return [.equals, .notEquals, .contains, .isNotSet]
         case .updateCycle:     return [.isOverdue, .isOnSchedule, .isUnknown]
+        case .installedVersion: return [.installedIsOutdated, .installedIsCurrent, .isInstalled, .isNotInstalled]
         case .hasUnreadUpdate: return [.isTrue, .isFalse]
         case .lastChecked, .lastUpdated: return [.lessThanDaysAgo, .moreThanDaysAgo, .never]
         }
@@ -209,6 +210,7 @@ private struct CriterionRow: View {
         case .sourceType:      return "Homebrew Cask"
         case .vendor:          return ""
         case .updateCycle:     return ""
+        case .installedVersion: return ""
         case .hasUnreadUpdate: return ""
         case .lastChecked, .lastUpdated:
             switch op {
