@@ -185,6 +185,34 @@ final class VersionReportServiceTests: XCTestCase {
         )
     }
 
+    func testSparkleFeedVersionFromEnclosureAttributesOrItemElements() {
+        let attributeFeed = """
+        <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel>
+        <item><title>2.0</title><enclosure url="https://example.com/a.zip" sparkle:version="200" sparkle:shortVersionString="2.0"/></item>
+        <item><enclosure url="https://example.com/b.zip" sparkle:version="100" sparkle:shortVersionString="1.0"/></item>
+        </channel></rss>
+        """
+        XCTAssertEqual(SparkleXMLParser.version(in: Data(attributeFeed.utf8)), "2.0")
+
+        let elementFeed = """
+        <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0"><channel>
+        <item><title>5.5.1</title><sparkle:version>153</sparkle:version>
+        <sparkle:shortVersionString>5.5.1</sparkle:shortVersionString>
+        <description><![CDATA[<h3>Version 5.5.1</h3>]]></description>
+        <enclosure url="https://example.com/Bezel.zip" type="application/octet-stream"/></item>
+        <item><sparkle:shortVersionString>5.5</sparkle:shortVersionString></item>
+        </channel></rss>
+        """
+        XCTAssertEqual(SparkleXMLParser.version(in: Data(elementFeed.utf8)), "5.5.1")
+
+        let buildOnlyFeed = """
+        <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel>
+        <item><sparkle:version>42</sparkle:version></item>
+        </channel></rss>
+        """
+        XCTAssertEqual(SparkleXMLParser.version(in: Data(buildOnlyFeed.utf8)), "42")
+    }
+
     func testMarkingAnUpdateAsReadUpdatesTheVisibleUnreadCount() {
         let service = makeService()
         let config = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")

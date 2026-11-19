@@ -45,13 +45,61 @@ enum VersionFetchError: Error, LocalizedError {
     }
 }
 
-private final class SparkleXMLParser: NSObject, XMLParserDelegate {
+/// Reads the version of the first item in a Sparkle appcast. Sparkle allows the
+/// version either as attributes on <enclosure> or as <sparkle:shortVersionString>
+/// and <sparkle:version> elements inside <item>; both are supported, and the
+/// short (marketing) version is preferred over the build number.
+final class SparkleXMLParser: NSObject, XMLParserDelegate {
     var version: String?
 
+    private var inItem = false
+    private var currentText = ""
+    private var shortVersion: String?
+    private var buildVersion: String?
+
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes: [String: String] = [:]) {
-        guard elementName == "enclosure", version == nil else { return }
-        version = attributes["sparkle:shortVersionString"] ?? attributes["sparkle:version"]
-        if version != nil { parser.abortParsing() }
+        currentText = ""
+        switch elementName {
+        case "item":
+            inItem = true
+        case "enclosure" where inItem:
+            shortVersion = shortVersion ?? attributes["sparkle:shortVersionString"]
+            buildVersion = buildVersion ?? attributes["sparkle:version"]
+        default:
+            break
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        currentText += string
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        guard inItem else { return }
+        let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        switch elementName {
+        case "sparkle:shortVersionString" where !text.isEmpty:
+            shortVersion = shortVersion ?? text
+        case "sparkle:version" where !text.isEmpty:
+            buildVersion = buildVersion ?? text
+        case "item":
+            inItem = false
+            if let found = shortVersion ?? buildVersion {
+                version = found
+                parser.abortParsing()
+            }
+        default:
+            break
+        }
+    }
+
+    static func version(in data: Data) -> String? {
+        let delegate = SparkleXMLParser()
+        let xmlParser = XMLParser(data: data)
+        xmlParser.delegate = delegate
+        xmlParser.parse()
+        return delegate.version
     }
 }
 
@@ -1015,12 +1063,7 @@ final class VersionReportService: ObservableObject {
             return nil
         }
 
-        let parser = SparkleXMLParser()
-        let xmlParser = XMLParser(data: data)
-        xmlParser.delegate = parser
-        xmlParser.parse()
-
-        guard let version = parser.version else { return nil }
+        guard let version = SparkleXMLParser.version(in: data) else { return nil }
         return SparkleInfo(version: version)
     }
 
