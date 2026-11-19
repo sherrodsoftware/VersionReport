@@ -122,8 +122,7 @@ struct InstalledAppsSheet: View {
     }
 
     private func finish(adding configs: [AppConfig]) {
-        // Everything shown has now been offered, so the launch prompt won't repeat it.
-        service.markInstalledAppsOffered(suggestions.map(\.id))
+        // Not Now leaves everything as is, so the prompt returns at the next launch.
         if dontShowAgain {
             service.suggestsInstalledAppsAtLaunch = false
         }

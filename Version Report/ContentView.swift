@@ -157,7 +157,7 @@ struct ContentView: View {
     }
 
     private func presentInstalledApps(manual: Bool) {
-        let suggestions = service.installedAppSuggestions(excludingOffered: !manual)
+        let suggestions = service.installedAppSuggestions()
 
         if suggestions.isEmpty {
             if manual { service.statusMessage = "All installed apps from the built-in library are already tracked." }

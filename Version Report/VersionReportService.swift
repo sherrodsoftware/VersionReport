@@ -573,7 +573,6 @@ final class VersionReportService: ObservableObject {
     // MARK: - Installed app suggestions
 
     static let suggestInstalledAppsKey = "versionReport.suggestInstalledApps"
-    static let offeredInstalledAppIDsKey = "versionReport.offeredInstalledAppIDs"
 
     /// Whether to offer installed built-in apps at launch. On unless turned off.
     var suggestsInstalledAppsAtLaunch: Bool {
@@ -582,9 +581,7 @@ final class VersionReportService: ObservableObject {
     }
 
     /// Built-in library apps installed on this Mac that aren't tracked yet.
-    /// With `excludingOffered`, apps already offered once are left out, so the
-    /// launch prompt only reappears when something new matches.
-    func installedAppSuggestions(excludingOffered: Bool) -> [InstalledAppSuggestion] {
+    func installedAppSuggestions() -> [InstalledAppSuggestion] {
         guard let bundledLibraryURL = bundledAppLibraryURL,
               let data = try? Data(contentsOf: bundledLibraryURL),
               let bundledConfigs = try? JSONDecoder().decode([AppConfig].self, from: data) else {
@@ -595,12 +592,10 @@ final class VersionReportService: ObservableObject {
         let trackedIDs = Set(tracked.map(\.id))
         let trackedBundleIDs = Set(tracked.compactMap(\.displayBundleID))
         let trackedNames = Set(tracked.map { $0.name.lowercased() })
-        let offered = excludingOffered ? offeredInstalledAppIDs : []
 
         return normalizeIDs(in: bundledConfigs)
             .filter { config in
                 !trackedIDs.contains(config.id)
-                    && !offered.contains(config.id)
                     && !trackedNames.contains(config.name.lowercased())
                     && !(config.displayBundleID.map(trackedBundleIDs.contains) ?? false)
             }
@@ -610,15 +605,6 @@ final class VersionReportService: ObservableObject {
                 return InstalledAppSuggestion(config: config, installed: installed)
             }
             .sorted { $0.config.name.localizedCaseInsensitiveCompare($1.config.name) == .orderedAscending }
-    }
-
-    var offeredInstalledAppIDs: Set<String> {
-        Set(UserDefaults.standard.stringArray(forKey: Self.offeredInstalledAppIDsKey) ?? [])
-    }
-
-    func markInstalledAppsOffered(_ ids: [String]) {
-        let updated = offeredInstalledAppIDs.union(ids)
-        UserDefaults.standard.set(updated.sorted(), forKey: Self.offeredInstalledAppIDsKey)
     }
 
     func saveAppLibrary(_ configs: [AppConfig]) {

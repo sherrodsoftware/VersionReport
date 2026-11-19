@@ -235,7 +235,7 @@ final class VersionReportServiceTests: XCTestCase {
         XCTAssertEqual(roundTrip, configs)
     }
 
-    func testInstalledAppSuggestionsSkipTrackedAndOfferedApps() throws {
+    func testInstalledAppSuggestionsSkipTrackedApps() throws {
         // Finder and Safari are always installed, so they stand in for library apps.
         let bundledURL = testDirectory.appendingPathComponent("bundled-library.json")
         var finder = makeConfig(id: "finder", name: "Finder")
@@ -246,20 +246,11 @@ final class VersionReportServiceTests: XCTestCase {
         missing.bundleID = "com.example.not-installed"
         try JSONEncoder().encode([finder, safari, missing]).write(to: bundledURL)
 
-        let offeredKey = VersionReportService.offeredInstalledAppIDsKey
-        let originalOffered = UserDefaults.standard.object(forKey: offeredKey)
-        UserDefaults.standard.removeObject(forKey: offeredKey)
-        defer { UserDefaults.standard.set(originalOffered, forKey: offeredKey) }
-
         let service = makeService(bundledLibraryURL: bundledURL)
-        XCTAssertEqual(service.installedAppSuggestions(excludingOffered: true).map(\.id), ["finder", "safari"])
+        XCTAssertEqual(service.installedAppSuggestions().map(\.id), ["finder", "safari"])
 
         service.saveAppConfigs([safari])
-        XCTAssertEqual(service.installedAppSuggestions(excludingOffered: true).map(\.id), ["finder"], "Tracked apps are not offered")
-
-        service.markInstalledAppsOffered(["finder"])
-        XCTAssertEqual(service.installedAppSuggestions(excludingOffered: true).map(\.id), [], "Offered apps are not repeated at launch")
-        XCTAssertEqual(service.installedAppSuggestions(excludingOffered: false).map(\.id), ["finder"], "The File menu still lists them")
+        XCTAssertEqual(service.installedAppSuggestions().map(\.id), ["finder"], "Tracked apps are not offered")
     }
 
     func testMarkingAnUpdateAsReadUpdatesTheVisibleUnreadCount() {

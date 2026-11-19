@@ -51,7 +51,7 @@ struct SettingsView: View {
             GroupBox("Installed Apps") {
                 VStack(alignment: .leading, spacing: 8) {
                     Toggle("Offer to track installed apps from the built-in library at launch", isOn: $suggestInstalledApps)
-                    Text("Each app is offered once. Use File → Add Installed Apps… to see the full list at any time.")
+                    Text("You can also use File → Add Installed Apps… at any time.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
