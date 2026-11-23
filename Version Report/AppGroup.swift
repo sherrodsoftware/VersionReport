@@ -1,6 +1,6 @@
 import Foundation
 
-struct AppGroup: Codable, Identifiable {
+struct AppGroup: Codable, Identifiable, Equatable {
     var id: String
     var name: String
     var appIDs: [String]

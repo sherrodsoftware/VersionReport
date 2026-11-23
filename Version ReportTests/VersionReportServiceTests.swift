@@ -19,11 +19,12 @@ final class VersionReportServiceTests: XCTestCase {
     }
 
     func testLegacyStateMigratesFromDisplayNameToStableID() throws {
-        // The migration runs once per Mac, gated by a flag in the host app's real defaults.
+        // The migration runs once per Mac, gated by a flag in the host app's defaults
+        // (an isolated domain while testing).
         let migrationKey = "versionReport.legacyStateMigrationDone"
-        let originalFlag = UserDefaults.standard.object(forKey: migrationKey)
-        UserDefaults.standard.removeObject(forKey: migrationKey)
-        defer { UserDefaults.standard.set(originalFlag, forKey: migrationKey) }
+        let originalFlag = RunEnvironment.defaults.object(forKey: migrationKey)
+        RunEnvironment.defaults.removeObject(forKey: migrationKey)
+        defer { RunEnvironment.defaults.set(originalFlag, forKey: migrationKey) }
 
         let service = makeService()
         let config = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")
@@ -253,6 +254,120 @@ final class VersionReportServiceTests: XCTestCase {
         XCTAssertEqual(service.installedAppSuggestions().map(\.id), ["finder"], "Tracked apps are not offered")
     }
 
+    func testInstalledAppLookupsAreCachedUntilRefreshed() {
+        let service = makeService()
+        var finder = makeConfig(id: "finder", name: "Finder")
+        finder.bundleID = "com.apple.finder"
+        service.saveAppConfigs([finder])
+
+        service.loadApps()
+        XCTAssertNotNil(service.apps.first?.installed, "Finder is always installed")
+        let first = service.installedApp(for: finder)
+
+        service.reloadApps()
+        XCTAssertEqual(service.installedApp(for: finder), first)
+
+        service.refreshInstalledApps()
+        XCTAssertEqual(service.apps.first?.installed?.bundleID, "com.apple.finder")
+    }
+
+    func testCheckOutcomesAreAppliedInOneBatch() {
+        let service = makeService()
+        let updated = makeConfig(id: "updated", name: "Updated")
+        let unchanged = makeConfig(id: "unchanged", name: "Unchanged")
+        let newApp = makeConfig(id: "new_app", name: "New App")
+        let failing = makeConfig(id: "failing", name: "Failing")
+        let recovered = makeConfig(id: "recovered", name: "Recovered")
+
+        var recoveredState = makeState(version: "3.0")
+        recoveredState.lastCheckError = "Timed out"
+        service.saveAppState([
+            updated.id: makeState(version: "1.0"),
+            unchanged.id: makeState(version: "2.0"),
+            failing.id: makeState(version: "4.0"),
+            recovered.id: recoveredState
+        ])
+
+        let updates = service.applyCheckOutcomes([
+            .found("1.1", for: updated),
+            .found("2.0", for: unchanged),
+            .found("5.0", for: newApp),
+            .failed("HTTP 500", for: failing),
+            .found("3.0", for: recovered)
+        ])
+
+        XCTAssertEqual(updates.map(\.config.id), ["updated"])
+        XCTAssertEqual(updates.first?.previousVersion, "1.0")
+
+        let state = service.loadAppState()
+        XCTAssertEqual(state["updated"]?.version, "1.1")
+        XCTAssertEqual(state["updated"]?.previousVersion, "1.0")
+        XCTAssertEqual(state["updated"]?.hasUnreadUpdate, true)
+        XCTAssertEqual(state["unchanged"]?.hasUnreadUpdate, false)
+        XCTAssertEqual(state["new_app"]?.version, "5.0")
+        XCTAssertEqual(state["new_app"]?.hasUnreadUpdate, false, "A first check isn't an update")
+        XCTAssertEqual(state["failing"]?.version, "4.0", "A failed check keeps the last known version")
+        XCTAssertEqual(state["failing"]?.lastCheckError, "HTTP 500")
+        XCTAssertNil(state["recovered"]?.lastCheckError, "A successful check clears an earlier error")
+
+        let history = service.loadReleaseHistory()
+        XCTAssertEqual(history["updated"]?.map(\.kind), [.detected])
+        XCTAssertEqual(history["new_app"]?.map(\.kind), [.firstSeen])
+        XCTAssertNil(history["unchanged"])
+        XCTAssertNil(history["failing"])
+    }
+
+    func testAddingSeveralAppsSkipsDuplicatesAndSavesThemTogether() {
+        let service = makeService()
+        // A local file as the version source keeps the first check off the network.
+        func localConfig(_ id: String) -> AppConfig {
+            AppConfig(id: id, name: id.capitalized,
+                      source: .custom(versionURL: URL(fileURLWithPath: "/dev/null"), parserType: "jq", parserValue: ".version"))
+        }
+        service.saveAppConfigs([localConfig("alpha")])
+
+        service.addAppConfigs([localConfig("alpha"), localConfig("beta"), localConfig("beta"), localConfig("gamma")])
+
+        XCTAssertEqual(service.loadAppConfigs().map(\.id), ["alpha", "beta", "gamma"])
+        XCTAssertEqual(Set(service.apps.map(\.id)), ["alpha", "beta", "gamma"])
+
+        service.addAppConfigs([localConfig("alpha")])
+        XCTAssertEqual(service.statusMessage, "An app with this ID is already being tracked.")
+    }
+
+    func testDroppingSeveralAppsOnAGroupAddsEachOnceAndIgnoresUnknownText() {
+        let service = makeService()
+        func localConfig(_ id: String) -> AppConfig {
+            AppConfig(id: id, name: id.capitalized,
+                      source: .custom(versionURL: URL(fileURLWithPath: "/dev/null"), parserType: "jq", parserValue: ".version"))
+        }
+        service.addAppConfigs([localConfig("alpha"), localConfig("beta")])
+        service.createGroup(named: "Test")
+        let groupID = try! XCTUnwrap(service.groups.last?.id)
+
+        service.addApps(["alpha"], toGroup: groupID)
+        service.addApps(["alpha", "beta", "beta", "some dragged text"], toGroup: groupID)
+
+        XCTAssertEqual(service.groups.last?.appIDs, ["alpha", "beta"])
+    }
+
+    func testIconsAreCachedAndReplacedWhenACustomIconIsSaved() {
+        let service = makeService()
+        let generic = service.icon(forID: "no_such_app")
+        XCTAssertTrue(service.icon(forID: "no_such_app") === generic, "Decoded once, then reused")
+
+        let custom = NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
+            NSColor.systemRed.setFill()
+            rect.fill()
+            return true
+        }
+        service.saveCustomIcon(custom, forID: "no_such_app")
+
+        let replaced = service.icon(forID: "no_such_app")
+        XCTAssertFalse(replaced === generic, "Saving a custom icon replaces the cached one")
+        XCTAssertTrue(service.icon(forID: "no_such_app") === replaced)
+    }
+
     func testMarkingAnUpdateAsReadUpdatesTheVisibleUnreadCount() {
         let service = makeService()
         let config = makeConfig(id: "adobe_photoshop", name: "Adobe Photoshop")
@@ -474,5 +589,22 @@ final class InstalledAppsTests: XCTestCase {
 
         let ids = configs.compactMap(\.displayBundleID)
         XCTAssertEqual(Set(ids).count, ids.count, "Bundle IDs must be unique")
+    }
+}
+
+
+final class RunEnvironmentTests: XCTestCase {
+
+    func testTestHostNeverUsesTheUsersRealDataOrSettings() {
+        XCTAssertTrue(RunEnvironment.isTestHost)
+        XCTAssertTrue(RunEnvironment.isIsolated)
+        XCTAssertFalse(RunEnvironment.allowsExternalEffects, "No Sparkle, notifications, or Teams while testing")
+        XCTAssertFalse(RunEnvironment.runsLaunchCheck, "Tests don't fetch every source at launch")
+
+        let realData = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Version Report").standardizedFileURL.path
+        XCTAssertNotEqual(RunEnvironment.dataDirectory.standardizedFileURL.path, realData)
+        XCTAssertNotEqual(versionReportBaseURL.standardizedFileURL.path, realData)
+        XCTAssertFalse(RunEnvironment.defaults === UserDefaults.standard)
     }
 }

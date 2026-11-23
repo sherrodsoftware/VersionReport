@@ -71,11 +71,9 @@ struct SmartGroupSheet: View {
             .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
 
             // Preview
-            let matched = service.apps.filter { app in
-                let sg = SmartGroup(id: editingSmartGroup?.id ?? UUID().uuidString,
-                                    name: name, match: match, criteria: criteria)
-                return sg.evaluate(app)
-            }
+            // Built once per redraw; only the rules matter for matching, not the name or ID.
+            let rules = SmartGroup(id: "", name: "", match: match, criteria: criteria)
+            let matched = service.apps.filter { rules.evaluate($0) }
             HStack {
                 Image(systemName: "eye")
                     .foregroundStyle(.secondary)

@@ -16,7 +16,7 @@ struct InstalledAppInfo: Equatable {
 }
 
 /// A built-in library app found on this Mac that isn't tracked yet.
-struct InstalledAppSuggestion: Identifiable {
+struct InstalledAppSuggestion: Identifiable, Equatable {
     let config: AppConfig
     let installed: InstalledAppInfo
     var id: String { config.id }
@@ -106,7 +106,7 @@ enum InstalledApps {
         return .unknown
     }
 
-    private static func compare(_ installedParts: [Int], _ availableParts: [Int]) -> InstallStatus {
+    nonisolated private static func compare(_ installedParts: [Int], _ availableParts: [Int]) -> InstallStatus {
         for (have, latest) in zip(installedParts, availableParts) where have != latest {
             return have < latest ? .outdated : .upToDate
         }
@@ -114,7 +114,7 @@ enum InstalledApps {
     }
 
     /// The leading dotted number in a version string: "6.0.1 (3221)" → [6, 0, 1].
-    static func numericParts(_ version: String) -> [Int]? {
+    nonisolated static func numericParts(_ version: String) -> [Int]? {
         guard let range = version.range(of: #"[0-9]+(\.[0-9]+)*"#, options: .regularExpression) else { return nil }
         let parts = version[range].split(separator: ".").compactMap { Int($0) }
         return parts.isEmpty ? nil : parts

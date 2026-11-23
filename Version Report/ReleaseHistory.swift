@@ -156,7 +156,7 @@ extension VersionReportService {
 
     // One notification per app per overdue stretch; a new release re-arms it.
     func notifyNewlyOverdueApps(_ configs: [AppConfig]) {
-        var notified = UserDefaults.standard.dictionary(forKey: Self.overdueNotifiedKey) as? [String: String] ?? [:]
+        var notified = RunEnvironment.defaults.dictionary(forKey: Self.overdueNotifiedKey) as? [String: String] ?? [:]
         let trackedIDs = Set(configs.map(\.id))
         notified = notified.filter { trackedIDs.contains($0.key) }
 
@@ -172,10 +172,11 @@ extension VersionReportService {
             notified[config.id] = cycle.lastReleaseVersion
         }
 
-        UserDefaults.standard.set(notified, forKey: Self.overdueNotifiedKey)
+        RunEnvironment.defaults.set(notified, forKey: Self.overdueNotifiedKey)
     }
 
     private func sendOverdueNotification(appName: String, cycle: UpdateCycle) {
+        guard RunEnvironment.allowsExternalEffects else { return }
         let content = UNMutableNotificationContent()
         content.title = "\(appName) may not be tracking correctly"
         content.body = "No new version in \(Int(cycle.daysSinceLastRelease)) days. It usually updates \(UpdateCycle.describe(days: cycle.typicalDays))."
@@ -226,21 +227,35 @@ extension VersionReportService {
     }
 
     func recordReleaseHistory(_ entries: [ReleaseHistoryEntry], forAppID id: String) {
-        guard !entries.isEmpty else { return }
+        recordReleaseHistory([id: entries])
+    }
+
+    /// Records entries for several apps with one read and one write of the history file.
+    func recordReleaseHistory(_ entriesByAppID: [String: [ReleaseHistoryEntry]]) {
+        let nonEmpty = entriesByAppID.filter { !$0.value.isEmpty }
+        guard !nonEmpty.isEmpty else { return }
+
         var history = loadReleaseHistory()
-        let merged = Self.merge(entries, into: history[id] ?? [])
-        guard merged != history[id] else { return }
-        history[id] = merged
-        saveReleaseHistory(history)
+        var didChange = false
+        for (id, entries) in nonEmpty {
+            let merged = Self.merge(entries, into: history[id] ?? [])
+            if merged != history[id] {
+                history[id] = merged
+                didChange = true
+            }
+        }
+        if didChange {
+            saveReleaseHistory(history)
+        }
     }
 
     func removeReleaseHistory(forAppID id: String) {
         var history = loadReleaseHistory()
         guard history.removeValue(forKey: id) != nil else { return }
         saveReleaseHistory(history)
-        var backfilled = Set(UserDefaults.standard.stringArray(forKey: Self.historyBackfilledKey) ?? [])
+        var backfilled = Set(RunEnvironment.defaults.stringArray(forKey: Self.historyBackfilledKey) ?? [])
         backfilled.remove(id)
-        UserDefaults.standard.set(Array(backfilled), forKey: Self.historyBackfilledKey)
+        RunEnvironment.defaults.set(Array(backfilled), forKey: Self.historyBackfilledKey)
     }
 
     // One-time: turn what app-state.json already knows into the first history entry for each app.
@@ -255,7 +270,7 @@ extension VersionReportService {
             saveReleaseHistory(history)
         }
 
-        guard !UserDefaults.standard.bool(forKey: Self.historySeededKey) else {
+        guard !RunEnvironment.defaults.bool(forKey: Self.historySeededKey) else {
             releaseHistory = history
             return
         }
@@ -277,12 +292,12 @@ extension VersionReportService {
         }
 
         saveReleaseHistory(history)
-        UserDefaults.standard.set(true, forKey: Self.historySeededKey)
+        RunEnvironment.defaults.set(true, forKey: Self.historySeededKey)
     }
 
     // Fetches vendor release dates once per app for sources that publish them.
     func backfillReleaseHistory(for configs: [AppConfig]) async {
-        var backfilled = Set(UserDefaults.standard.stringArray(forKey: Self.historyBackfilledKey) ?? [])
+        var backfilled = Set(RunEnvironment.defaults.stringArray(forKey: Self.historyBackfilledKey) ?? [])
 
         for config in configs where !backfilled.contains(config.id) {
             let releases: [ReleaseHistoryEntry]?
@@ -303,7 +318,7 @@ extension VersionReportService {
             backfilled.insert(config.id)
         }
 
-        UserDefaults.standard.set(Array(backfilled), forKey: Self.historyBackfilledKey)
+        RunEnvironment.defaults.set(Array(backfilled), forKey: Self.historyBackfilledKey)
     }
 
     private func fetchGitHubReleaseHistory(_ repoPath: String) async -> [ReleaseHistoryEntry]? {

@@ -1,25 +1,31 @@
 import Foundation
-import Combine
+import Observation
 
-final class AppUIState: ObservableObject {
-    @Published var showingAddAppSheet = false
-    @Published var selectedAppIDs = Set<MonitoredApp.ID>()
-    @Published var editingOriginalAppID: String?
-    @Published var showingDeleteConfirmation = false
-    @Published var showingLibrarySheet = false
-    @Published var showingLibraryConflictsSheet = false
-    @Published var installedAppSuggestions: [InstalledAppSuggestion] = []
-    @Published var showingInstalledAppsSheet = false
+/// Transient UI state. Observation tracks each property separately, so a view
+/// redraws only when a property it read changes (selecting a row no longer
+/// redraws views that never look at the selection).
+@Observable
+final class AppUIState {
+    var showingAddAppSheet = false
+    var selectedAppIDs = Set<MonitoredApp.ID>()
+    var editingOriginalAppID: String?
+    var showingDeleteConfirmation = false
+    var showingLibrarySheet = false
+    var showingLibraryConflictsSheet = false
+    var installedAppSuggestions: [InstalledAppSuggestion] = []
+    var showingInstalledAppsSheet = false
     /// True when opened from the File menu rather than the launch prompt.
-    @Published var installedAppsSheetIsManual = false
+    var installedAppsSheetIsManual = false
 
-    var onEditRequested: () -> Void = {}
-    var onDeleteRequested: () -> Void = {}
-    var onAddToLibraryRequested: () -> Void = {}
-    var onMarkAsReadRequested: () -> Void = {}
-    var onMarkAsUnreadRequested: () -> Void = {}
-    var onNewGroupRequested: () -> Void = {}
-    var onNewGroupFromSelectionRequested: () -> Void = {}
-    var onNewSmartGroupRequested: () -> Void = {}
-    var onFindInstalledAppsRequested: () -> Void = {}
+    // Actions wired up by ContentView. They aren't state anyone renders, so
+    // assigning them must not invalidate the views that call them.
+    @ObservationIgnored var onEditRequested: () -> Void = {}
+    @ObservationIgnored var onDeleteRequested: () -> Void = {}
+    @ObservationIgnored var onAddToLibraryRequested: () -> Void = {}
+    @ObservationIgnored var onMarkAsReadRequested: () -> Void = {}
+    @ObservationIgnored var onMarkAsUnreadRequested: () -> Void = {}
+    @ObservationIgnored var onNewGroupRequested: () -> Void = {}
+    @ObservationIgnored var onNewGroupFromSelectionRequested: () -> Void = {}
+    @ObservationIgnored var onNewSmartGroupRequested: () -> Void = {}
+    @ObservationIgnored var onFindInstalledAppsRequested: () -> Void = {}
 }

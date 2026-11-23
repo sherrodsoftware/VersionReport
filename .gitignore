@@ -6,7 +6,9 @@ build/
 xcuserdata/
 CODE_REVIEW.md
 RELEASE_CHECKLIST.md
-docs/
+# Private planning docs; the rest of docs/ is tracked.
+docs/Roadmap.md
+docs/Product Improvement Recommendations.md
 *.pkg
 *.app
 dist/

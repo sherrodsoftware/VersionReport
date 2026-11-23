@@ -67,22 +67,22 @@ Example:
 
 ``` json
 {
-  "name": "SoundQ",
+  "name": "Adobe Photoshop",
   "parserType": "regex",
-  "parserValue": "SoundQ_v[0-9]+(\\.[0-9]+)+\\.pkg"
+  "parserValue": "<h2>[^<]*\\(version [0-9]+(\\.[0-9]+)+\\)</h2>"
 }
 ```
+
+Version Report takes the version from the matched text: the first dotted
+version (`28.0`) if there is one, otherwise the first whole number (`27`).
 
 Guidelines:
 
 -   Anchor to product-specific text whenever possible.
 -   Avoid generic version expressions on noisy pages.
 
-### Apple App Store pattern
-
-``` text
-primarySubtitle":"Version [0-9]+(\.[0-9]+)+
-```
+App Store apps use Apple's lookup API with the `jq` parser and
+`.results.0.version` rather than a regex; see [Adding Apps.md](Adding%20Apps.md).
 
 ------------------------------------------------------------------------
 
@@ -92,7 +92,10 @@ Scans every regex match and returns the highest semantic version.
 
 Useful when:
 
--   Release history pages list many versions.
+-   Download or release-history pages list many versions, including older
+    ones. Include product-specific text in the pattern, such as
+    `atom-premiere_[0-9]+(\.[0-9]+)*_mac`, which also allows whole-number
+    versions.
 -   All matched versions belong to the same product.
 
 Avoid when pages contain unrelated version numbers, SDK versions, dates,
@@ -104,10 +107,10 @@ or build numbers.
 
 Preference order:
 
-1.  Homebrew JSON (`jq_trim_comma`)
+1.  Homebrew Cask source (or `jq_trim_comma` for other Homebrew JSON)
 2.  Vendor JSON (`jq`)
 3.  Vendor release notes (`regex`)
-4.  Apple App Store pages (`regex`)
+4.  Apple App Store (lookup API with `jq`)
 5.  `highest_version` only when appropriate
 
 ------------------------------------------------------------------------

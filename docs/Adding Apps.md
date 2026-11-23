@@ -6,11 +6,13 @@ to Version Report.
 ## Workflow
 
 1.  Identify the best version source.
-2.  Test the parser in Version Report.
-3.  Add the application to the library.
-4.  Verify against the application's About window.
-5.  Update the bundled `app-library.json`.
-6.  Build and test.
+2.  Test the source in Version Report (Look Up or Test Parser).
+3.  Verify against the application's About window.
+4.  Add the entry to `Version Report/Resources/app-library.json`, with its
+    vendor and bundle ID.
+5.  Add a 128×128 icon to `Version Report/Resources/icons/`, named by app ID.
+6.  Run `python3 scripts/generate-library-md.py` to update `LIBRARY.md`.
+7.  Build and run the tests.
 
 ------------------------------------------------------------------------
 
@@ -18,16 +20,22 @@ to Version Report.
 
 ### 1. Homebrew Casks (Preferred)
 
-Example API:
+Use the Homebrew Cask source with the cask name:
 
-    https://formulae.brew.sh/api/cask/firefox.json
+``` json
+{ "sourceType": "homebrew", "caskName": "firefox" }
+```
 
-Parser:
+Version Report reads `https://formulae.brew.sh/api/cask/<name>.json`. Use it
+whenever a maintained cask exists.
 
--   Type: `jq_trim_comma`
--   Value: `.version`
+### Sparkle Feeds and GitHub Releases
 
-Use whenever a maintained cask exists.
+Apps that update through Sparkle can use their appcast URL
+(`"sourceType": "sparkle", "feedURL": ...`). Apps that publish GitHub releases
+can use `"sourceType": "github", "repoPath": "owner/repo"`, but check that the
+repository's latest release is the app itself: some repositories publish
+releases for other tools, or leave the latest-release marker on an old version.
 
 ------------------------------------------------------------------------
 
@@ -70,15 +78,13 @@ Avoid broad version matching.
 
 ### 5. Apple App Store
 
-Use the Mac App Store web page:
+Use the App Store source. Searching in the Add App window creates a lookup URL
+such as:
 
-    https://apps.apple.com/... ?platform=mac
+    https://itunes.apple.com/lookup?id=1435415804&entity=macSoftware
 
-Current parser pattern:
-
-    primarySubtitle":"Version [0-9]+(\.[0-9]+)+"
-
-This has proven more accurate than Apple's lookup API.
+with the `jq` parser and `.results.0.version`. The lookup also provides the
+app's bundle ID and its developer.
 
 ------------------------------------------------------------------------
 
@@ -90,6 +96,11 @@ Every library entry needs a stable, readable lowercase ID using underscores.
 For example:
 
     "id": "google_chrome"
+
+Built-in entries also need a `vendor` and a `bundleId`; a test fails if a
+built-in entry has no bundle ID or two share one. Confirm a bundle ID with:
+
+    osascript -e 'id of app "Google Chrome"'
 
 The ID must remain unchanged if the application's display name changes. Use it
 for the matching icon filename, such as `icons/google_chrome.png`.
@@ -133,15 +144,13 @@ Before adding an app:
 
 ## Deployment
 
-After modifying the library:
+Edit `Version Report/Resources/app-library.json` directly; it's the single
+shipping catalog.
 
-1.  Update the Application Support copy while testing.
-2.  Copy the finished `app-library.json` into the Xcode Resources
-    folder.
-3.  Build Version Report.
-
-On launch, Version Report updates matching user library entries
-automatically while preserving user-created entries.
+On launch, Version Report adds new bundled entries to each user's library and
+fills in fields the user never set, but doesn't overwrite existing entries.
+Add from Library always uses the bundled definition, so a fix reaches anyone who
+removes and re-adds the app.
 
 ------------------------------------------------------------------------
 
@@ -153,8 +162,8 @@ The goal is to select the most stable, maintainable source available.
 
 Preferred order:
 
-1.  Homebrew JSON
+1.  Homebrew casks
 2.  Vendor JSON
 3.  Vendor release notes
-4.  Apple App Store page
+4.  Apple App Store lookup
 5.  Other HTML sources

@@ -1,15 +1,7 @@
 import SwiftUI
 import Foundation
 
-let versionReportBaseURL: URL = {
-    guard let url = FileManager.default
-        .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-        .first
-    else {
-        fatalError("Application Support directory not found")
-    }
-    return url.appendingPathComponent("Version Report")
-}()
+let versionReportBaseURL: URL = RunEnvironment.dataDirectory
 
 extension Notification.Name {
     static let versionReportCheckNow = Notification.Name("versionReportCheckNow")
@@ -80,8 +72,8 @@ struct MonitoredApp: Identifiable, Equatable {
 
 struct ContentView: View {
 
-    @ObservedObject var service: VersionReportService
-    @ObservedObject var uiState: AppUIState
+    let service: VersionReportService
+    @Bindable var uiState: AppUIState
     @State private var sortOrder = [KeyPathComparator(\MonitoredApp.name)]
     @State private var columnCustomization = TableColumnCustomization<MonitoredApp>()
     // v2: earlier layouts saved the status and icon columns under per-launch IDs and can't be restored correctly.
@@ -94,6 +86,10 @@ struct ContentView: View {
     @AppStorage("showAppDetail") private var showAppDetail = false
 
     @State private var searchText = ""
+    /// The table's rows: filtered for the sidebar selection, sorted, and searched.
+    /// Stored rather than computed in body, so selecting a row (which redraws this
+    /// view for the detail panel) doesn't re-filter and re-sort every app.
+    @State private var displayedApps: [MonitoredApp] = []
     @State private var librarySearchText = ""
     @State private var selectedLibraryAppIDs = Set<String>()
     @State private var cachedLibraryApps: [AppConfig] = []
@@ -105,7 +101,14 @@ struct ContentView: View {
     @State private var showingRemoveFromGroupConfirmation = false
 
 
-    private var filteredApps: [MonitoredApp] {
+    private func refreshDisplayedApps() {
+        let apps = makeDisplayedApps()
+        if apps != displayedApps {
+            displayedApps = apps
+        }
+    }
+
+    private func makeDisplayedApps() -> [MonitoredApp] {
         var baseApps = service.apps
 
         switch sidebarSelection ?? .allApps {
@@ -294,9 +297,7 @@ struct ContentView: View {
                         selectedLibraryAppIDs.contains($0.id)
                     }
 
-                    for config in selectedConfigs {
-                        service.addAppConfig(config)
-                    }
+                    service.addAppConfigs(selectedConfigs)
 
                     librarySearchText = ""
                     selectedLibraryAppIDs.removeAll()
@@ -310,7 +311,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder private var appsTable: some View {
-        Table(filteredApps, selection: $uiState.selectedAppIDs, sortOrder: $sortOrder, columnCustomization: $columnCustomization) {
+        Table(of: MonitoredApp.self, selection: $uiState.selectedAppIDs, sortOrder: $sortOrder, columnCustomization: $columnCustomization) {
             TableColumn("", value: \.unreadSortValue) { app in
                 if app.lastCheckError != nil {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -337,10 +338,6 @@ struct ContentView: View {
 
             TableColumn("App", value: \.name) { app in
                 Text(app.name).lineLimit(1)
-                    .onTapGesture(count: 2) {
-                        uiState.selectedAppIDs = [app.id]
-                        showAppDetail = true
-                    }
             }
             .width(min: 180, ideal: 220)
             .customizationID("app")
@@ -405,14 +402,14 @@ struct ContentView: View {
                 .width(min: 160, ideal: 180)
                 .customizationID("lastUpdated")
             }
+        } rows: {
+            // The table's own row dragging: a drag starts anywhere on a row, takes the
+            // whole selection when the row is selected, and shows the rows with a count.
+            ForEach(displayedApps) { app in
+                TableRow(app)
+                    .draggable(app.id)
+            }
         }
-        .background(
-            TableDragSourceView(
-                filteredApps: filteredApps,
-                selectedAppIDs: uiState.selectedAppIDs,
-                iconProvider: { service.icon(for: $0) }
-            )
-        )
         .selectionDisabled(false)
         .contextMenu(forSelectionType: MonitoredApp.ID.self) { ids in
             Button("Copy Version") {
@@ -480,6 +477,13 @@ struct ContentView: View {
                     !service.groups.contains { group in ids.contains { group.appIDs.contains($0) } }
                 }())
             }
+        } primaryAction: { ids in
+            // Double-clicking a row (or pressing Return) opens its details. The table's own
+            // primary action replaces a double-tap gesture on the name, which held back the
+            // next click anywhere in the window while it waited for a possible second tap.
+            guard let id = ids.first else { return }
+            uiState.selectedAppIDs = [id]
+            showAppDetail = true
         }
         .frame(minHeight: 360)
     }
@@ -723,14 +727,15 @@ struct ContentView: View {
             service.requestNotificationPermission()
             service.loadApps()
             applySortOrder(for: service.apps)
+            refreshDisplayedApps()
             service.runLaunchCheck()
             service.scheduleAutoCheck()
             uiState.onFindInstalledAppsRequested = { presentInstalledApps(manual: true) }
-            if service.suggestsInstalledAppsAtLaunch {
+            if service.suggestsInstalledAppsAtLaunch && RunEnvironment.allowsExternalEffects {
                 // Let the window finish appearing before presenting a sheet over it.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { presentInstalledApps(manual: false) }
             }
-            if let data = UserDefaults.standard.data(forKey: Self.columnCustomizationKey),
+            if let data = RunEnvironment.defaults.data(forKey: Self.columnCustomizationKey),
                let saved = try? JSONDecoder().decode(TableColumnCustomization<MonitoredApp>.self, from: data) {
                 columnCustomization = saved
             }
@@ -761,15 +766,23 @@ struct ContentView: View {
         }
         .onChange(of: service.apps) { _, apps in
             applySortOrder(for: apps)
+            refreshDisplayedApps()
         }
+        .onChange(of: service.groups) { refreshDisplayedApps() }
+        .onChange(of: service.smartGroups) { refreshDisplayedApps() }
+        .onChange(of: sidebarSelection) { refreshDisplayedApps() }
+        .onChange(of: sortOrder) { refreshDisplayedApps() }
+        .onChange(of: searchText) { refreshDisplayedApps() }
         .onChange(of: columnCustomization) { _, newValue in
             if let data = try? JSONEncoder().encode(newValue) {
-                UserDefaults.standard.set(data, forKey: Self.columnCustomizationKey)
+                RunEnvironment.defaults.set(data, forKey: Self.columnCustomizationKey)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Pick up apps the user installed or updated while Version Report was in the background.
-            service.reloadApps()
+            service.refreshInstalledApps()
+            // Smart group rules such as "checked within 7 days" depend on the time.
+            refreshDisplayedApps()
         }
         .onReceive(NotificationCenter.default.publisher(for: .versionReportCheckNow)) { _ in
             service.runVersionCheck()

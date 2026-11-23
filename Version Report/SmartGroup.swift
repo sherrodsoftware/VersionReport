@@ -74,7 +74,7 @@ enum SmartGroupOperator: String, Codable, CaseIterable {
     }
 }
 
-struct SmartGroupCriterion: Codable, Identifiable {
+struct SmartGroupCriterion: Codable, Identifiable, Equatable {
     var id: String = UUID().uuidString
     var field: SmartGroupField
     var op: SmartGroupOperator
@@ -85,7 +85,7 @@ struct SmartGroupCriterion: Codable, Identifiable {
     }
 }
 
-struct SmartGroup: Codable, Identifiable {
+struct SmartGroup: Codable, Identifiable, Equatable {
     var id: String = UUID().uuidString
     var name: String
     var match: SmartGroupMatch

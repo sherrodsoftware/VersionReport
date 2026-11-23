@@ -4,7 +4,7 @@ import SwiftUI
 struct InstalledAppsSheet: View {
 
     let service: VersionReportService
-    @ObservedObject var uiState: AppUIState
+    let uiState: AppUIState
 
     @State private var selectedIDs: Set<String> = []
     @State private var dontShowAgain = false
@@ -127,13 +127,8 @@ struct InstalledAppsSheet: View {
             service.suggestsInstalledAppsAtLaunch = false
         }
 
-        for config in configs {
-            service.addAppConfig(config)
-        }
         if !configs.isEmpty {
-            service.statusMessage = configs.count == 1
-                ? "Added \(configs[0].name)"
-                : "Added \(configs.count) apps from your Applications folder"
+            service.addAppConfigs(configs)
         }
 
         uiState.showingInstalledAppsSheet = false

@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 import UserNotifications
 import UniformTypeIdentifiers
-import Combine
+import Observation
 import CryptoKit
 
 enum CheckFrequency: String, CaseIterable {
@@ -251,7 +251,7 @@ struct AppConfig: Codable, Identifiable, Equatable {
     }
 }
 
-struct LibraryConflict: Codable, Identifiable {
+struct LibraryConflict: Codable, Identifiable, Equatable {
     let bundledConfig: AppConfig
     let userConfig: AppConfig
     var id: String { bundledConfig.id }
@@ -286,23 +286,39 @@ struct AppState: Codable {
     }
 }
 
-final class VersionReportService: ObservableObject {
+/// Observation tracks each property separately, so a view redraws only when a
+/// property it read changes: a new status message no longer redraws the table,
+/// sidebar, and detail panel.
+@Observable
+final class VersionReportService {
 
-    @Published var apps: [MonitoredApp] = [] {
+    var apps: [MonitoredApp] = [] {
         didSet {
             updateDockBadge()
         }
     }
-    @Published var isChecking = false
-    @Published var statusMessage = "Ready"
-    @Published var checkHadErrors = false
-    @Published var pendingLibraryConflicts: [LibraryConflict] = []
-    @Published var groups: [AppGroup] = []
-    @Published var smartGroups: [SmartGroup] = []
-    @Published var releaseHistory: [String: [ReleaseHistoryEntry]] = [:]
+    var isChecking = false
+    var statusMessage = "Ready"
+    var checkHadErrors = false
+    var pendingLibraryConflicts: [LibraryConflict] = []
+    var groups: [AppGroup] = []
+    var smartGroups: [SmartGroup] = []
+    var releaseHistory: [String: [ReleaseHistoryEntry]] = [:]
+    /// Bumped when an icon file changes, so views showing icons reload them.
+    private(set) var iconRevision = 0
 
-    private var hourlyTimer: Timer?
-    private var dockBadgeRefreshObserver: NSObjectProtocol?
+    /// Installed copies found so far, keyed by bundle ID (or "name:" plus the app name).
+    /// LaunchServices queries and Info.plist reads are cached until the app is
+    /// reactivated, rather than repeated for every app on every reload.
+    @ObservationIgnored private var installedAppCache: [String: InstalledAppInfo?] = [:]
+
+    /// Decoded icons by app ID. Reading and decoding a PNG for every visible row
+    /// on every redraw is replaced by one decode per icon.
+    @ObservationIgnored private var iconCache: [String: NSImage] = [:]
+    @ObservationIgnored private lazy var genericAppIcon = NSWorkspace.shared.icon(for: UTType.application)
+
+    @ObservationIgnored private var hourlyTimer: Timer?
+    @ObservationIgnored private var dockBadgeRefreshObserver: NSObjectProtocol?
     let baseURL: URL
     private let bundledAppLibraryURL: URL?
     private let bundledIconsURL: URL?
@@ -447,6 +463,19 @@ final class VersionReportService: ObservableObject {
         groups = updated
     }
 
+    /// Adds several apps to a group with one save, skipping any already in it.
+    func addApps(_ appIDs: [String], toGroup groupID: String) {
+        var updated = groups
+        guard let idx = updated.firstIndex(where: { $0.id == groupID }) else { return }
+        var existing = Set(updated[idx].appIDs)
+        let known = Set(apps.map(\.id))
+        let newIDs = appIDs.filter { known.contains($0) && existing.insert($0).inserted }
+        guard !newIDs.isEmpty else { return }
+        updated[idx].appIDs.append(contentsOf: newIDs)
+        saveGroups(updated)
+        groups = updated
+    }
+
     func moveGroups(from source: IndexSet, to destination: Int) {
         var updated = groups
         let items = source.sorted().map { updated[$0] }
@@ -466,13 +495,13 @@ final class VersionReportService: ObservableObject {
     }
 
     private func loadPersistedConflicts() -> [LibraryConflict] {
-        guard let data = UserDefaults.standard.data(forKey: "pendingLibraryConflicts") else { return [] }
+        guard let data = RunEnvironment.defaults.data(forKey: "pendingLibraryConflicts") else { return [] }
         return (try? JSONDecoder().decode([LibraryConflict].self, from: data)) ?? []
     }
 
     private func savePersistedConflicts(_ conflicts: [LibraryConflict]) {
         if let data = try? JSONEncoder().encode(conflicts) {
-            UserDefaults.standard.set(data, forKey: "pendingLibraryConflicts")
+            RunEnvironment.defaults.set(data, forKey: "pendingLibraryConflicts")
         }
     }
 
@@ -576,8 +605,8 @@ final class VersionReportService: ObservableObject {
 
     /// Whether to offer installed built-in apps at launch. On unless turned off.
     var suggestsInstalledAppsAtLaunch: Bool {
-        get { UserDefaults.standard.object(forKey: Self.suggestInstalledAppsKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: Self.suggestInstalledAppsKey) }
+        get { RunEnvironment.defaults.object(forKey: Self.suggestInstalledAppsKey) as? Bool ?? true }
+        set { RunEnvironment.defaults.set(newValue, forKey: Self.suggestInstalledAppsKey) }
     }
 
     /// Built-in library apps installed on this Mac that aren't tracked yet.
@@ -862,6 +891,8 @@ final class VersionReportService: ObservableObject {
             }
         }
 
+        iconCache.removeAll()
+
         if didChangeManifest {
             saveBundledIconManifest(manifest)
         }
@@ -892,50 +923,103 @@ final class VersionReportService: ObservableObject {
     }
 
     func addAppConfig(_ config: AppConfig) {
-        var configs = loadAppConfigs()
+        addAppConfigs([config])
+    }
 
-        guard !configs.contains(where: { $0.id == config.id }) else {
-            statusMessage = "An app with this ID is already being tracked."
+    /// Adds apps in one pass: one save and one reload up front, the first version
+    /// checks run concurrently and are written together, then one final reload.
+    /// Adding many apps at once no longer rebuilds the list twice per app.
+    func addAppConfigs(_ newConfigs: [AppConfig]) {
+        var configs = loadAppConfigs()
+        var seenIDs = Set(configs.map(\.id))
+        let added = newConfigs.filter { seenIDs.insert($0.id).inserted }
+
+        guard !added.isEmpty else {
+            statusMessage = newConfigs.count == 1
+                ? "An app with this ID is already being tracked."
+                : "These apps are already being tracked."
             return
         }
 
-        configs.append(config)
+        configs.append(contentsOf: added)
         saveAppConfigs(configs)
         loadApps()
 
         Task {
-            await applyDetectedVendorIfNeeded(for: config)
+            await applyDetectedMetadataIfNeeded(for: added)
         }
 
         Task {
-            await applyDetectedBundleIDIfNeeded(for: config)
-        }
+            var outcomes: [CheckOutcome] = []
+            var failedNames: [String] = []
 
-        Task {
-            do {
-                if let version = try await fetchCurrentVersion(for: config) {
-
-                    _ = updateAppState(
-                        version: version,
-                        for: config
-                    )
-
-                    let updatedApps = loadMonitoredApps()
-
-                    await MainActor.run {
-                        self.apps = updatedApps
-                        self.statusMessage = "Added \(config.name) at \(Self.displayTimeFormatter.string(from: Date()))"
+            await withTaskGroup(of: (AppConfig, String?).self) { group in
+                for config in added {
+                    group.addTask {
+                        do {
+                            return (config, try await self.fetchCurrentVersion(for: config))
+                        } catch {
+                            print("Initial check failed for \(config.name): \(error)")
+                            return (config, nil)
+                        }
                     }
                 }
-
-            } catch {
-
-                await MainActor.run {
-                    self.statusMessage = "Added \(config.name), but version lookup failed"
+                for await (config, version) in group {
+                    if let version {
+                        outcomes.append(.found(version, for: config))
+                    } else {
+                        failedNames.append(config.name)
+                    }
                 }
-
-                print("Initial check failed for \(config.name): \(error)")
             }
+
+            applyCheckOutcomes(outcomes)
+            let time = Self.displayTimeFormatter.string(from: Date())
+
+            await MainActor.run {
+                self.apps = self.loadMonitoredApps()
+                if added.count == 1 {
+                    self.statusMessage = failedNames.isEmpty
+                        ? "Added \(added[0].name) at \(time)"
+                        : "Added \(added[0].name), but version lookup failed"
+                } else if failedNames.isEmpty {
+                    self.statusMessage = "Added \(added.count) apps at \(time)"
+                } else {
+                    self.statusMessage = "Added \(added.count) apps at \(time). Version lookup failed for \(failedNames.count)."
+                }
+            }
+        }
+    }
+
+    /// Fills in a vendor and bundle ID for added apps that don't have one, saving once.
+    private func applyDetectedMetadataIfNeeded(for added: [AppConfig]) async {
+        var vendors: [String: String] = [:]
+        var bundleIDs: [String: String] = [:]
+
+        for config in added {
+            if config.vendor == nil, let vendor = await detectVendor(for: config.source) {
+                vendors[config.id] = vendor
+            }
+            if config.bundleID == nil, let bundleID = await detectBundleID(for: config) {
+                bundleIDs[config.id] = bundleID
+            }
+        }
+
+        guard !vendors.isEmpty || !bundleIDs.isEmpty else { return }
+
+        await MainActor.run {
+            var configs = loadAppConfigs()
+            for index in configs.indices {
+                let id = configs[index].id
+                if configs[index].vendor == nil, let vendor = vendors[id] {
+                    configs[index].vendor = vendor
+                }
+                if configs[index].bundleID == nil, let bundleID = bundleIDs[id] {
+                    configs[index].bundleID = bundleID
+                }
+            }
+            saveAppConfigs(configs)
+            apps = loadMonitoredApps()
         }
     }
 
@@ -968,32 +1052,6 @@ final class VersionReportService: ObservableObject {
 
         default:
             return nil
-        }
-    }
-
-    private func applyDetectedVendorIfNeeded(for config: AppConfig) async {
-        guard config.vendor == nil, let vendor = await detectVendor(for: config.source) else { return }
-
-        await MainActor.run {
-            var configs = loadAppConfigs()
-            guard let index = configs.firstIndex(where: { $0.id == config.id }),
-                  configs[index].vendor == nil else { return }
-            configs[index].vendor = vendor
-            saveAppConfigs(configs)
-            apps = loadMonitoredApps()
-        }
-    }
-
-    private func applyDetectedBundleIDIfNeeded(for config: AppConfig) async {
-        guard config.bundleID == nil, let bundleID = await detectBundleID(for: config) else { return }
-
-        await MainActor.run {
-            var configs = loadAppConfigs()
-            guard let index = configs.firstIndex(where: { $0.id == config.id }),
-                  configs[index].bundleID == nil else { return }
-            configs[index].bundleID = bundleID
-            saveAppConfigs(configs)
-            apps = loadMonitoredApps()
         }
     }
 
@@ -1336,18 +1394,16 @@ final class VersionReportService: ObservableObject {
                 }
             }
 
+            // Results are gathered here and written once at the end of the check.
+            var outcomes: [CheckOutcome] = []
+
             for item in appStoreItems {
                 if let version = batchedVersions[item.config.id] {
-                    clearCheckError(for: item.config)
-                    let result = updateAppState(version: version, for: item.config)
-                    if result.didUpdate {
-                        sendVersionUpdateNotification(appName: item.config.name, previousVersion: result.previousVersion, currentVersion: version)
-                        detectedUpdates.append((appName: item.config.name, previousVersion: result.previousVersion, currentVersion: version))
-                    }
+                    outcomes.append(.found(version, for: item.config))
                 } else {
                     let msg = "App Store lookup failed"
                     fetchErrors.append("\(item.config.name): \(msg)")
-                    saveCheckError(msg, for: item.config)
+                    outcomes.append(.failed(msg, for: item.config))
                 }
             }
 
@@ -1367,28 +1423,22 @@ final class VersionReportService: ObservableObject {
                     if let error {
                         print("Check failed for \(config.name): \(error)")
                         fetchErrors.append("\(config.name): \(error.localizedDescription)")
-                        saveCheckError(error.localizedDescription, for: config)
+                        outcomes.append(.failed(error.localizedDescription, for: config))
                     } else if let version {
-                        clearCheckError(for: config)
-                        let result = updateAppState(version: version, for: config)
-
-                        if result.didUpdate {
-                            sendVersionUpdateNotification(
-                                appName: config.name,
-                                previousVersion: result.previousVersion,
-                                currentVersion: version
-                            )
-
-                            detectedUpdates.append(
-                                (
-                                    appName: config.name,
-                                    previousVersion: result.previousVersion,
-                                    currentVersion: version
-                                )
-                            )
-                        }
+                        outcomes.append(.found(version, for: config))
                     }
                 }
+            }
+
+            for update in applyCheckOutcomes(outcomes) {
+                sendVersionUpdateNotification(
+                    appName: update.config.name,
+                    previousVersion: update.previousVersion,
+                    currentVersion: update.currentVersion
+                )
+                detectedUpdates.append(
+                    (appName: update.config.name, previousVersion: update.previousVersion, currentVersion: update.currentVersion)
+                )
             }
 
             if !detectedUpdates.isEmpty {
@@ -1503,6 +1553,23 @@ final class VersionReportService: ObservableObject {
         apps = loadMonitoredApps()
     }
 
+    /// Re-reads installed versions, for when apps may have been installed or
+    /// updated while Version Report was in the background.
+    func refreshInstalledApps() {
+        installedAppCache.removeAll()
+        reloadApps()
+    }
+
+    func installedApp(for config: AppConfig) -> InstalledAppInfo? {
+        let key = config.displayBundleID ?? "name:\(config.name)"
+        if let cached = installedAppCache[key] {
+            return cached
+        }
+        let found = InstalledApps.lookup(bundleID: config.displayBundleID, appName: config.name)
+        installedAppCache[key] = .some(found)
+        return found
+    }
+
     func markUpdatesAsRead(for appIDs: Set<String>) {
         setUnreadStatus(false, for: appIDs)
     }
@@ -1538,63 +1605,85 @@ final class VersionReportService: ObservableObject {
     }
 
 
+    /// One app's result from a version check: the version found, or why it failed.
+    struct CheckOutcome {
+        let config: AppConfig
+        let version: String?
+        let errorMessage: String?
+
+        static func found(_ version: String, for config: AppConfig) -> CheckOutcome {
+            CheckOutcome(config: config, version: version, errorMessage: nil)
+        }
+
+        static func failed(_ message: String, for config: AppConfig) -> CheckOutcome {
+            CheckOutcome(config: config, version: nil, errorMessage: message)
+        }
+    }
+
+    struct DetectedUpdate {
+        let config: AppConfig
+        let previousVersion: String
+        let currentVersion: String
+    }
+
+    /// Applies a batch of check results with one read and one write of
+    /// app-state.json, and at most one of release-history.json, rather than
+    /// several per app. Returns the apps whose version changed.
+    @discardableResult
+    func applyCheckOutcomes(_ outcomes: [CheckOutcome]) -> [DetectedUpdate] {
+        guard !outcomes.isEmpty else { return [] }
+
+        var appState = loadAppState()
+        var historyEntries: [String: [ReleaseHistoryEntry]] = [:]
+        var updates: [DetectedUpdate] = []
+        let nowDate = Date()
+        let now = Self.iso8601Writer.string(from: nowDate)
+
+        for outcome in outcomes {
+            let id = outcome.config.id
+            let existing = appState[id]
+
+            guard let version = outcome.version else {
+                appState[id] = AppState(
+                    version: existing?.version ?? "Unknown",
+                    previousVersion: existing?.previousVersion,
+                    lastChecked: now,
+                    lastUpdated: existing?.lastUpdated,
+                    hasUnreadUpdate: existing?.hasUnreadUpdate ?? false,
+                    lastCheckError: outcome.errorMessage
+                )
+                continue
+            }
+
+            let previousVersion = existing?.version ?? "Unknown"
+            let didUpdate = previousVersion != "Unknown" && previousVersion != version
+
+            // A successful check also clears any earlier error (lastCheckError defaults to nil).
+            appState[id] = AppState(
+                version: version,
+                previousVersion: didUpdate ? previousVersion : existing?.previousVersion,
+                lastChecked: now,
+                lastUpdated: didUpdate ? now : existing?.lastUpdated,
+                hasUnreadUpdate: didUpdate ? true : (existing?.hasUnreadUpdate ?? false)
+            )
+
+            if didUpdate {
+                historyEntries[id, default: []].append(ReleaseHistoryEntry(version: version, date: nowDate, kind: .detected))
+                updates.append(DetectedUpdate(config: outcome.config, previousVersion: previousVersion, currentVersion: version))
+            } else if previousVersion == "Unknown" {
+                historyEntries[id, default: []].append(ReleaseHistoryEntry(version: version, date: nowDate, kind: .firstSeen))
+            }
+        }
+
+        saveAppState(appState)
+        recordReleaseHistory(historyEntries)
+        return updates
+    }
+
     func updateAppState(version: String, for config: AppConfig) -> (previousVersion: String, didUpdate: Bool) {
-
-        var appState = loadAppState()
-        let existingState = appState[config.id]
-        let previousVersion = existingState?.version ?? "Unknown"
-        let didUpdate = previousVersion != "Unknown" && previousVersion != version
-
-        let now = Self.iso8601Writer.string(from: Date())
-
-        let lastUpdated: String?
-        let hasUnreadUpdate: Bool
-
-        if didUpdate {
-            lastUpdated = now
-            hasUnreadUpdate = true
-        } else {
-            lastUpdated = existingState?.lastUpdated
-            hasUnreadUpdate = existingState?.hasUnreadUpdate ?? false
-        }
-
-        appState[config.id] = AppState(
-            version: version,
-            previousVersion: didUpdate ? previousVersion : existingState?.previousVersion,
-            lastChecked: now,
-            lastUpdated: lastUpdated,
-            hasUnreadUpdate: hasUnreadUpdate
-        )
-
-        saveAppState(appState)
-
-        if didUpdate {
-            recordReleaseHistory([ReleaseHistoryEntry(version: version, date: Date(), kind: .detected)], forAppID: config.id)
-        } else if previousVersion == "Unknown" {
-            recordReleaseHistory([ReleaseHistoryEntry(version: version, date: Date(), kind: .firstSeen)], forAppID: config.id)
-        }
-
+        let previousVersion = loadAppState()[config.id]?.version ?? "Unknown"
+        let didUpdate = !applyCheckOutcomes([.found(version, for: config)]).isEmpty
         return (previousVersion, didUpdate)
-    }
-
-    func saveCheckError(_ message: String, for config: AppConfig) {
-        var appState = loadAppState()
-        let existing = appState[config.id]
-        appState[config.id] = AppState(
-            version: existing?.version ?? "Unknown",
-            previousVersion: existing?.previousVersion,
-            lastChecked: Self.iso8601Writer.string(from: Date()),
-            lastUpdated: existing?.lastUpdated,
-            hasUnreadUpdate: existing?.hasUnreadUpdate ?? false,
-            lastCheckError: message
-        )
-        saveAppState(appState)
-    }
-
-    func clearCheckError(for config: AppConfig) {
-        var appState = loadAppState()
-        appState[config.id]?.lastCheckError = nil
-        saveAppState(appState)
     }
 
     func parseJSONValue(from data: Data, keyPath: String) -> String? {
@@ -1724,9 +1813,9 @@ final class VersionReportService: ObservableObject {
 
         let configs = loadAppConfigs()
 
-        if !UserDefaults.standard.bool(forKey: Self.legacyMigrationKey) {
+        if !RunEnvironment.defaults.bool(forKey: Self.legacyMigrationKey) {
             migrateAppState(for: configs)
-            UserDefaults.standard.set(true, forKey: Self.legacyMigrationKey)
+            RunEnvironment.defaults.set(true, forKey: Self.legacyMigrationKey)
         }
 
         let appState = loadAppState()
@@ -1752,7 +1841,7 @@ final class VersionReportService: ObservableObject {
                     lastCheckError: state?.lastCheckError,
                     latestReleaseURL: config.source.latestReleaseURL,
                     updateCycle: updateCycle(forAppID: config.id),
-                    installed: InstalledApps.lookup(bundleID: config.displayBundleID, appName: config.name),
+                    installed: installedApp(for: config),
                     tracksInstall: config.displayBundleID != nil
                 )
             )
@@ -1766,17 +1855,25 @@ final class VersionReportService: ObservableObject {
     }
 
     func icon(forID id: String) -> NSImage {
+        _ = iconRevision  // Views that show an icon redraw when an icon is replaced.
+        if let cached = iconCache[id] {
+            return cached
+        }
+
         let iconPath = baseURL
             .appendingPathComponent("icons")
             .appendingPathComponent("\(id).png")
             .path
 
-        if let icon = NSImage(contentsOfFile: iconPath) {
-            icon.isTemplate = false
-            return icon
+        let icon: NSImage
+        if let image = NSImage(contentsOfFile: iconPath) {
+            image.isTemplate = false
+            icon = image
+        } else {
+            icon = genericAppIcon
         }
-
-        return NSWorkspace.shared.icon(for: UTType.application)
+        iconCache[id] = icon
+        return icon
     }
 
     func icon(for app: MonitoredApp) -> NSImage {
@@ -1802,12 +1899,14 @@ final class VersionReportService: ObservableObject {
 
         if let data = rep.representation(using: .png, properties: [:]) {
             try? data.write(to: dest)
-            objectWillChange.send()
+            iconCache[id] = nil
+            iconRevision += 1
         }
     }
 
 
     func requestNotificationPermission() {
+        guard RunEnvironment.allowsExternalEffects else { return }
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
                 print("Failed to request notification permission: \(error)")
@@ -1828,6 +1927,7 @@ final class VersionReportService: ObservableObject {
     }
 
     func sendVersionUpdateNotification(appName: String, previousVersion: String, currentVersion: String) {
+        guard RunEnvironment.allowsExternalEffects else { return }
         let versions = Self.notificationVersions(previous: previousVersion, current: currentVersion)
         let content = UNMutableNotificationContent()
         content.title = "Version Report"
@@ -1848,6 +1948,7 @@ final class VersionReportService: ObservableObject {
     }
 
     func sendTeamsUpdateNotification(for updates: [(appName: String, previousVersion: String, currentVersion: String)]) async {
+        guard RunEnvironment.allowsExternalEffects else { return }
 
         guard let webhookURLString = KeychainHelper.shared.loadTeamsWebhookURL()?.trimmingCharacters(in: .whitespacesAndNewlines),
               !webhookURLString.isEmpty,
@@ -1938,7 +2039,8 @@ final class VersionReportService: ObservableObject {
     }
 
     func runLaunchCheck() {
-        let freq = CheckFrequency(rawValue: UserDefaults.standard.string(forKey: "checkFrequency") ?? "") ?? .onLaunch
+        guard RunEnvironment.runsLaunchCheck else { return }
+        let freq = CheckFrequency(rawValue: RunEnvironment.defaults.string(forKey: "checkFrequency") ?? "") ?? .onLaunch
         guard freq != .manual else { return }
         runVersionCheck()
         scheduleAutoCheck()
@@ -1947,8 +2049,9 @@ final class VersionReportService: ObservableObject {
     func scheduleAutoCheck() {
         hourlyTimer?.invalidate()
         hourlyTimer = nil
+        guard RunEnvironment.runsLaunchCheck else { return }
 
-        let freq = CheckFrequency(rawValue: UserDefaults.standard.string(forKey: "checkFrequency") ?? "") ?? .onLaunch
+        let freq = CheckFrequency(rawValue: RunEnvironment.defaults.string(forKey: "checkFrequency") ?? "") ?? .onLaunch
         guard let interval = freq.interval else { return }
 
         hourlyTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in

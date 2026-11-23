@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 struct AppDetailView: View {
 
     let app: MonitoredApp
-    @ObservedObject var service: VersionReportService
+    let service: VersionReportService
     let onEdit: () -> Void
 
     @State private var iconDropTargeted = false
