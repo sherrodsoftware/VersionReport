@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## Version Report 2026.11.23
 
 - **Less redrawing.** Version Report's models now use Swift's Observation instead of `ObservableObject`, so a change redraws only the views that show it. Before, any change, such as a new status message, the end of a check, or selecting a row, redrew the whole window, sidebar, and detail panel. Menu commands are now built as small views, so their enabled state keeps following the selection.
 - **Faster checks and adding.** A version check gathers every app's result and saves them together, instead of reading and rewriting the app state file twice for each app. Adding several apps at once, from Add Installed Apps or Add from Library, saves and checks them together instead of rebuilding the list twice for each app, and the status line reports how many were added. Installed versions are looked up once and reused until Version Report becomes active again.
